@@ -15,7 +15,10 @@ import {
   TrendingUp,
   Bot,
   Star,
+  ChevronDown,
 } from 'lucide-react'
+import { formatIDR } from '@/lib/utils'
+import { SUBSCRIPTION_PRICE, TRIAL_DURATION_DAYS } from '@/lib/constants'
 
 const FEATURES = [
   {
@@ -81,7 +84,7 @@ const HOW_IT_WORKS = [
 ]
 
 const PRICING_FEATURES = [
-  '7 hari trial gratis, tanpa kartu kredit',
+  `${TRIAL_DURATION_DAYS} hari trial gratis, tanpa kartu kredit`,
   'Catat transaksi via Telegram',
   'Dashboard web interaktif',
   'Grafik cashflow bulanan',
@@ -96,11 +99,53 @@ const PREMIUM_EXTRA = [
   'Prioritas support',
 ]
 
+const TESTIMONIALS = [
+  {
+    initials: 'AR',
+    name: 'Andi R.',
+    role: 'Pemilik warung makan',
+    quote: 'Sekarang saya tahu berapa pemasukan harian tanpa harus buka buku catatan. Tinggal chat ke bot, selesai.',
+  },
+  {
+    initials: 'SP',
+    name: 'Siti P.',
+    role: 'Freelancer desain grafis',
+    quote: 'Akhirnya ada apps keuangan yang sesimple kirim WA. Dan laporannya lengkap banget di dashboard!',
+  },
+  {
+    initials: 'BW',
+    name: 'Budi W.',
+    role: 'Pengguna beta',
+    quote: 'Udah coba banyak apps keuangan, tapi ini yang paling gampang dipakai sehari-hari karena via Telegram.',
+  },
+]
+
+const FAQ = [
+  {
+    q: 'Apakah bisa cancel kapan saja?',
+    a: 'Ya, kamu bisa cancel langganan kapan saja. Data kamu tetap aman dan bisa diakses meskipun sudah cancel.',
+  },
+  {
+    q: 'Apakah data saya aman?',
+    a: 'Sangat aman. Data kamu dienkripsi dan dilindungi dengan Row Level Security di Supabase. Hanya kamu yang bisa mengakses datamu.',
+  },
+  {
+    q: 'Metode pembayaran apa yang diterima?',
+    a: 'Kami menerima QRIS, transfer bank (BCA, Mandiri, BNI, dll), GoPay, OVO, DANA, dan berbagai e-wallet lainnya via Duitku.',
+  },
+  {
+    q: 'Setelah trial berakhir, apa yang terjadi?',
+    a: 'Kamu masih bisa mengakses dashboard web untuk melihat data. Pencatatan baru via Telegram akan dinonaktifkan hingga upgrade ke Premium.',
+  },
+]
+
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (user) redirect('/dashboard')
+
+  const priceFormatted = formatIDR(SUBSCRIPTION_PRICE)
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -131,13 +176,15 @@ export default async function HomePage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden py-24 md:py-32">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-primary/5 blur-3xl" />
+        {/* Dual gradient orbs */}
+        <div className="absolute inset-0 -z-10 overflow-hidden" aria-hidden>
+          <div className="absolute top-0 left-1/3 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-primary/8 blur-3xl" />
+          <div className="absolute top-0 right-1/3 translate-x-1/2 w-[400px] h-[400px] rounded-full bg-blue-500/6 blur-3xl" />
         </div>
         <div className="mx-auto max-w-4xl px-4 text-center">
           <Badge variant="secondary" className="mb-6 gap-1.5">
             <Star className="h-3 w-3 fill-current" />
-            Trial 7 hari gratis, tanpa kartu kredit
+            Trial {TRIAL_DURATION_DAYS} hari gratis, tanpa kartu kredit
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 leading-tight">
             Catat keuangan cukup
@@ -218,8 +265,37 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section className="py-16 bg-muted/30 border-y border-border/50">
+        <div className="mx-auto max-w-5xl px-4">
+          <p className="text-center text-sm text-muted-foreground mb-8 font-medium uppercase tracking-wider">
+            Apa kata pengguna beta
+          </p>
+          <div className="grid md:grid-cols-3 gap-6">
+            {TESTIMONIALS.map((t) => (
+              <Card key={t.name} className="border-border/50">
+                <CardContent className="pt-6 space-y-4">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
+                      {t.initials}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{t.name}</p>
+                      <p className="text-xs text-muted-foreground">{t.role}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
-      <section id="fitur" className="py-24 bg-muted/30">
+      <section id="fitur" className="py-24">
         <div className="mx-auto max-w-5xl px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Semua yang Kamu Butuhkan</h2>
@@ -229,7 +305,10 @@ export default async function HomePage() {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map((f) => (
-              <Card key={f.title} className="border-border/50">
+              <Card
+                key={f.title}
+                className="border-border/50 hover:border-primary/30 hover:shadow-sm transition-all duration-200"
+              >
                 <CardContent className="pt-6">
                   <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${f.bg} mb-4`}>
                     <f.icon className={`h-5 w-5 ${f.color}`} />
@@ -244,7 +323,7 @@ export default async function HomePage() {
       </section>
 
       {/* Pricing */}
-      <section id="harga" className="py-24">
+      <section id="harga" className="py-24 bg-muted/30">
         <div className="mx-auto max-w-4xl px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Harga Simpel, Tanpa Kejutan</h2>
@@ -262,7 +341,7 @@ export default async function HomePage() {
                 </div>
                 <div>
                   <span className="text-4xl font-bold">Gratis</span>
-                  <span className="text-muted-foreground ml-2">/ 7 hari</span>
+                  <span className="text-muted-foreground ml-2">/ {TRIAL_DURATION_DAYS} hari</span>
                 </div>
                 <ul className="space-y-2">
                   {PRICING_FEATURES.map((f) => (
@@ -279,7 +358,7 @@ export default async function HomePage() {
             </Card>
 
             {/* Premium */}
-            <Card className="border-primary relative">
+            <Card className="border-primary relative animate-pulse-ring">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                 <Badge className="bg-primary text-primary-foreground px-3">
                   <Zap className="h-3 w-3 mr-1" />
@@ -292,7 +371,7 @@ export default async function HomePage() {
                   <p className="text-muted-foreground text-sm">Akses penuh tanpa batas</p>
                 </div>
                 <div>
-                  <span className="text-4xl font-bold">Rp 29.000</span>
+                  <span className="text-4xl font-bold">{priceFormatted}</span>
                   <span className="text-muted-foreground ml-2">/ bulan</span>
                 </div>
                 <ul className="space-y-2">
@@ -315,6 +394,29 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="py-20">
+        <div className="mx-auto max-w-2xl px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-3">Pertanyaan Umum</h2>
+            <p className="text-muted-foreground">Ada pertanyaan? Kami siap bantu.</p>
+          </div>
+          <div className="space-y-4">
+            {FAQ.map((item) => (
+              <details key={item.q} className="group border border-border/60 rounded-xl overflow-hidden">
+                <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-medium text-sm list-none hover:bg-muted/40 transition-colors">
+                  {item.q}
+                  <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="px-5 pb-4 pt-1 text-sm text-muted-foreground leading-relaxed">
+                  {item.a}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-24 bg-primary text-primary-foreground">
         <div className="mx-auto max-w-3xl px-4 text-center">
@@ -322,7 +424,7 @@ export default async function HomePage() {
             Siap catat keuangan lebih mudah?
           </h2>
           <p className="text-primary-foreground/80 text-lg mb-8">
-            Bergabung dan coba gratis selama 7 hari. Tidak perlu kartu kredit.
+            Bergabung dan coba gratis selama {TRIAL_DURATION_DAYS} hari. Tidak perlu kartu kredit.
           </p>
           <Button size="lg" variant="secondary" className="gap-2 text-base px-8" asChild>
             <Link href="/register">
@@ -364,7 +466,11 @@ function ChatBubble({ messages }: { messages: ChatMessage[] }) {
   return (
     <div className="bg-background rounded-2xl border border-border/50 p-4 space-y-3 shadow-sm">
       {messages.map((msg, i) => (
-        <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
+        <div
+          key={i}
+          className={`flex animate-fade-in-up ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}
+          style={{ animationDelay: `${i * 80}ms` }}
+        >
           <div
             className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
               msg.from === 'user'

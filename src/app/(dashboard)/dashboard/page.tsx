@@ -1,20 +1,14 @@
 import { createClient } from '@/utils/supabase/server'
-import { formatInTimeZone } from 'date-fns-tz'
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
-import { TrendingUp, TrendingDown, Wallet, MessageCircle, AlertTriangle, ArrowRight, Zap } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, MessageCircle, AlertTriangle, ArrowRight, Receipt, Bot } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { type RecentTransaction, type ChartDataPoint, getJoinedCategory } from '@/types'
 import { OverviewChart } from './overview-chart'
-
-const formatIDR = (amount: number) =>
-  new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(amount)
+import { formatIDR, formatDateShort } from '@/lib/utils'
+import { TRIAL_WARNING_THRESHOLD_DAYS } from '@/lib/constants'
 
 interface DashboardData {
   income: number
@@ -23,12 +17,18 @@ interface DashboardData {
   chartData: ChartDataPoint[]
 }
 
+/**
+ * Fetch all dashboard data for a user in an optimized way.
+ * Uses a single query for the 6-month chart data instead of 6 separate queries,
+ * then aggregates client-side by month key (YYYY-MM).
+ */
 async function getDashboardData(userId: string): Promise<DashboardData> {
   const supabase = await createClient()
   const now = new Date()
   const monthStart = startOfMonth(now)
   const monthEnd = endOfMonth(now)
 
+  // Current month summary
   const { data: transactions } = await supabase
     .from('transactions')
     .select('amount, type')
@@ -40,6 +40,7 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
   const income = transactions?.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0) ?? 0
   const expense = transactions?.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0) ?? 0
 
+  // Recent transactions for the activity list
   const { data: recentTransactions } = await supabase
     .from('transactions')
     .select('id, amount, type, description, transaction_date, needs_review, categories(name, icon)')
@@ -48,23 +49,36 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
     .order('created_at', { ascending: false })
     .limit(8)
 
+  // ── 6-month chart data: single query instead of 6 separate queries ──────────
+  const sixMonthsAgo = format(startOfMonth(subMonths(now, 5)), 'yyyy-MM-dd')
+  const today = format(monthEnd, 'yyyy-MM-dd')
+
+  const { data: chartTx } = await supabase
+    .from('transactions')
+    .select('amount, type, transaction_date')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .gte('transaction_date', sixMonthsAgo)
+    .lte('transaction_date', today)
+
+  // Group transactions by month key (YYYY-MM) and accumulate totals
+  const monthlyTotals: Record<string, { income: number; expense: number }> = {}
+  for (const tx of chartTx ?? []) {
+    const key = tx.transaction_date.substring(0, 7) // "YYYY-MM"
+    if (!monthlyTotals[key]) monthlyTotals[key] = { income: 0, expense: 0 }
+    if (tx.type === 'income') monthlyTotals[key].income += Number(tx.amount)
+    else if (tx.type === 'expense') monthlyTotals[key].expense += Number(tx.amount)
+  }
+
+  // Build ordered chartData for the last 6 months
   const chartData: ChartDataPoint[] = []
   for (let i = 5; i >= 0; i--) {
     const monthDate = subMonths(now, i)
-    const mStart = format(startOfMonth(monthDate), 'yyyy-MM-dd')
-    const mEnd = format(endOfMonth(monthDate), 'yyyy-MM-dd')
-    const { data: mTx } = await supabase
-      .from('transactions')
-      .select('amount, type')
-      .eq('user_id', userId)
-      .is('deleted_at', null)
-      .gte('transaction_date', mStart)
-      .lte('transaction_date', mEnd)
-
+    const key = format(monthDate, 'yyyy-MM')
     chartData.push({
       month: format(monthDate, 'MMM'),
-      income: mTx?.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0) ?? 0,
-      expense: mTx?.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0) ?? 0,
+      income: monthlyTotals[key]?.income ?? 0,
+      expense: monthlyTotals[key]?.expense ?? 0,
     })
   }
 
@@ -125,14 +139,14 @@ export default async function DashboardPage() {
         </Alert>
       )}
 
-      {profile?.subscription_status === 'trial' && daysLeft !== null && daysLeft <= 3 && (
+      {profile?.subscription_status === 'trial' && daysLeft !== null && daysLeft <= TRIAL_WARNING_THRESHOLD_DAYS && (
         <Alert className="border-amber-500/30 bg-amber-500/10 [&>svg]:text-amber-600">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle className="text-amber-900 dark:text-amber-100">
             Trial berakhir dalam {daysLeft} hari
           </AlertTitle>
           <AlertDescription className="flex items-center justify-between gap-2">
-            <span className="text-amber-700/80 dark:text-amber-300/80">Upgrade Premium Rp 29.000/bulan</span>
+            <span className="text-amber-700/80 dark:text-amber-300/80">Upgrade Premium {formatIDR(29000)}/bulan</span>
             <Button asChild size="sm" className="h-7 text-xs flex-shrink-0">
               <Link href="/dashboard/subscription">Upgrade</Link>
             </Button>
@@ -142,39 +156,39 @@ export default async function DashboardPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3">
-        <Card className="border-green-500/20 bg-green-500/10">
+        <Card className="border-green-500/20 bg-gradient-to-br from-green-500/10 to-green-500/5 hover:ring-1 hover:ring-green-500/20 transition-all">
           <CardContent className="p-3 md:p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-green-700 dark:text-green-400">Pemasukan</span>
               <TrendingUp className="h-3.5 w-3.5 text-green-600" />
             </div>
-            <p className="text-base md:text-xl font-bold text-green-700 dark:text-green-400 truncate">
+            <p className="text-base md:text-xl font-bold text-green-700 dark:text-green-400 truncate tabular-nums">
               {formatIDR(income)}
             </p>
             <p className="text-[10px] text-green-600/60 mt-0.5">bulan ini</p>
           </CardContent>
         </Card>
 
-        <Card className="border-red-500/20 bg-red-500/10">
+        <Card className="border-red-500/20 bg-gradient-to-br from-red-500/10 to-red-500/5 hover:ring-1 hover:ring-red-500/20 transition-all">
           <CardContent className="p-3 md:p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-red-700 dark:text-red-400">Pengeluaran</span>
               <TrendingDown className="h-3.5 w-3.5 text-red-600" />
             </div>
-            <p className="text-base md:text-xl font-bold text-red-700 dark:text-red-400 truncate">
+            <p className="text-base md:text-xl font-bold text-red-700 dark:text-red-400 truncate tabular-nums">
               {formatIDR(expense)}
             </p>
             <p className="text-[10px] text-red-600/60 mt-0.5">bulan ini</p>
           </CardContent>
         </Card>
 
-        <Card className={netCashflow >= 0 ? 'border-primary/20 bg-primary/10' : 'border-red-500/20 bg-red-500/10'}>
+        <Card className={`hover:ring-1 transition-all ${netCashflow >= 0 ? 'border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 hover:ring-primary/20' : 'border-red-500/20 bg-gradient-to-br from-red-500/10 to-red-500/5 hover:ring-red-500/20'}`}>
           <CardContent className="p-3 md:p-4">
             <div className="flex items-center justify-between mb-2">
               <span className={`text-xs font-medium ${netCashflow >= 0 ? 'text-primary' : 'text-red-700 dark:text-red-400'}`}>Net</span>
               <Wallet className={`h-3.5 w-3.5 ${netCashflow >= 0 ? 'text-primary' : 'text-red-600'}`} />
             </div>
-            <p className={`text-base md:text-xl font-bold truncate ${netCashflow >= 0 ? 'text-primary' : 'text-red-700 dark:text-red-400'}`}>
+            <p className={`text-base md:text-xl font-bold truncate tabular-nums ${netCashflow >= 0 ? 'text-primary' : 'text-red-700 dark:text-red-400'}`}>
               {formatIDR(netCashflow)}
             </p>
             <p className={`text-[10px] mt-0.5 ${netCashflow >= 0 ? 'text-primary/60' : 'text-red-600/60'}`}>cashflow</p>
@@ -218,11 +232,11 @@ export default async function DashboardPage() {
                         {tx.description ?? category?.name ?? 'Transaksi'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatInTimeZone(new Date(tx.transaction_date), timezone, 'dd MMM')}
+                        {formatDateShort(tx.transaction_date, timezone)}
                         {category?.name && ` · ${category.name}`}
                       </p>
                     </div>
-                    <span className={`text-sm font-semibold flex-shrink-0 ${tx.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
+                    <span className={`text-sm font-semibold flex-shrink-0 tabular-nums ${tx.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
                       {tx.type === 'income' ? '+' : '-'}{formatIDR(tx.amount)}
                     </span>
                   </div>
@@ -230,17 +244,25 @@ export default async function DashboardPage() {
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                <Zap className="h-6 w-6 text-muted-foreground" />
+            <div className="flex flex-col items-center justify-center py-14 text-center px-4">
+              <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Receipt className="h-7 w-7 text-muted-foreground" />
               </div>
-              <p className="text-sm font-medium">Belum ada transaksi</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Chat ke bot Telegram untuk mulai mencatat
+              <p className="text-sm font-semibold">Belum ada transaksi</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+                Mulai catat via bot Telegram atau tambah manual
               </p>
-              <Button asChild size="sm" className="mt-4">
-                <Link href="/dashboard/telegram">Hubungkan Telegram</Link>
-              </Button>
+              <div className="flex gap-2 mt-4">
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/dashboard/telegram">
+                    <Bot className="h-3.5 w-3.5 mr-1.5" />
+                    Hubungkan Telegram
+                  </Link>
+                </Button>
+                <Button asChild size="sm">
+                  <Link href="/dashboard/transactions/new">+ Tambah Manual</Link>
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

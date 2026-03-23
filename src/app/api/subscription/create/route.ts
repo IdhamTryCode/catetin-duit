@@ -1,10 +1,25 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createClient, createAdminClient } from '@/utils/supabase/server'
+import { SUBSCRIPTION_PRICE, PAYMENT_EXPIRY_MINUTES } from '@/lib/constants'
 
-const SUBSCRIPTION_PRICE = 29000
 const IS_SANDBOX = process.env.NODE_ENV !== 'production'
 
+/**
+ * POST /api/subscription/create
+ *
+ * Creates a Duitku payment invoice for a 1-month Premium subscription.
+ *
+ * Request signature format (x-duitku-signature header):
+ *   SHA256(merchantCode + timestamp + apiKey)
+ *
+ * The merchantOrderId encodes the user and timestamp for traceability:
+ *   Format: SUB_{userId}_{Date.now()}
+ *
+ * On success, returns { payment_url, reference } and redirects the user
+ * to the Duitku-hosted payment page. The webhook handler at
+ * /api/webhooks/duitku will handle the payment result callback.
+ */
 export async function POST() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -19,6 +34,8 @@ export async function POST() {
 
   const merchantOrderId = `SUB_${user.id}_${Date.now()}`
   const timestamp = Date.now().toString()
+
+  // SHA256(merchantCode + timestamp + apiKey) — Duitku request signature
   const signature = crypto
     .createHash('sha256')
     .update(`${merchantCode}${timestamp}${apiKey}`)
@@ -59,7 +76,7 @@ export async function POST() {
       },
       callbackUrl: `${appUrl}/api/webhooks/duitku`,
       returnUrl: `${appUrl}/dashboard/subscription`,
-      expiryPeriod: 1440, // 24 hours in minutes
+      expiryPeriod: PAYMENT_EXPIRY_MINUTES,
     }),
   })
 
@@ -74,7 +91,7 @@ export async function POST() {
     return NextResponse.json({ error: duitkuData.statusMessage }, { status: 400 })
   }
 
-  // Save payment record
+  // Save pending payment record for idempotency tracking
   const adminSupabase = await createAdminClient()
   await adminSupabase.from('payments').insert({
     user_id: user.id,
@@ -84,7 +101,7 @@ export async function POST() {
     amount: SUBSCRIPTION_PRICE,
     status: 'pending',
     payment_method: 'DUITKU',
-    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    expires_at: new Date(Date.now() + PAYMENT_EXPIRY_MINUTES * 60 * 1000).toISOString(),
   })
 
   return NextResponse.json({

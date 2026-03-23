@@ -5,19 +5,28 @@ import {
   sendTrialExpiredEmail,
   sendPremiumExpiringEmail,
 } from '@/lib/email'
+import { TRIAL_REMINDER_DAYS, PREMIUM_REMINDER_DAYS } from '@/lib/constants'
 
-// Validate that the request comes from Vercel Cron or our own secret
+/**
+ * Validate that the request originates from Vercel Cron or an authorized manual trigger.
+ *
+ * Two accepted authorization paths:
+ * 1. Vercel Cron: sends `x-vercel-cron: 1` header automatically.
+ * 2. Manual trigger (GitHub Actions, cron-job.org, etc.): sends `Authorization: Bearer <CRON_SECRET>`.
+ */
 function isAuthorized(req: NextRequest): boolean {
-  // Vercel Cron sends this header automatically
   const isVercelCron = req.headers.get('x-vercel-cron') === '1'
-  // Manual trigger (GitHub Actions, cron-job.org, etc.) uses Authorization header
   const secret = process.env.CRON_SECRET
   const authHeader = req.headers.get('authorization')
   const hasValidSecret = secret && authHeader === `Bearer ${secret}`
-
   return isVercelCron || !!hasValidSecret
 }
 
+/**
+ * Calculate the number of days between now and a future/past date string.
+ * Positive = date is in the future (e.g. +3 means 3 days from now).
+ * Negative = date is in the past.
+ */
 function daysBetween(dateStr: string): number {
   const now = new Date()
   const target = new Date(dateStr)
@@ -25,6 +34,16 @@ function daysBetween(dateStr: string): number {
   return Math.round(diff / (1000 * 60 * 60 * 24))
 }
 
+/**
+ * GET /api/cron/daily
+ *
+ * Scheduled job that runs daily. Handles three tasks:
+ * 1. Trial reminders — emails users H-3 and H-1 before trial ends.
+ * 2. Trial expiry    — marks expired trials as 'trial_expired' and sends email.
+ * 3. Premium reminders — emails premium users H-3 and H-1 before subscription ends.
+ *
+ * Returns a summary of actions taken and any errors encountered.
+ */
 export async function GET(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -50,7 +69,7 @@ export async function GET(req: NextRequest) {
   } else {
     for (const profile of trialUsers ?? []) {
       const days = daysBetween(profile.trial_ends_at)
-      if (days !== 3 && days !== 1) continue
+      if (!(TRIAL_REMINDER_DAYS as readonly number[]).includes(days)) continue
 
       const { data: { user } } = await supabase.auth.admin.getUserById(profile.id)
       if (!user?.email) continue
@@ -80,7 +99,6 @@ export async function GET(req: NextRequest) {
     results.errors.push(`expired_query: ${expiredErr.message}`)
   } else {
     for (const profile of expiredTrialUsers ?? []) {
-      // Update status ke trial_expired
       await supabase
         .from('profiles')
         .update({ subscription_status: 'trial_expired' })
@@ -110,7 +128,7 @@ export async function GET(req: NextRequest) {
   } else {
     for (const profile of premiumUsers ?? []) {
       const days = daysBetween(profile.subscription_ends_at)
-      if (days !== 3 && days !== 1) continue
+      if (!(PREMIUM_REMINDER_DAYS as readonly number[]).includes(days)) continue
 
       const { data: { user } } = await supabase.auth.admin.getUserById(profile.id)
       if (!user?.email) continue

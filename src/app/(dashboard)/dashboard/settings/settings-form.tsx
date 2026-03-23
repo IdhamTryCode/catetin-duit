@@ -11,10 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import { updateProfile, disconnectTelegram } from './actions'
 import { toast } from 'sonner'
+import { TIMEZONES, VALID_TIMEZONES, DEFAULT_TIMEZONE } from '@/lib/constants'
+import { isValidTimezone } from '@/lib/utils'
 
 const settingsSchema = z.object({
   full_name: z.string().min(2, 'Nama minimal 2 karakter'),
-  timezone: z.enum(['Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura']),
+  timezone: z.enum(VALID_TIMEZONES),
 })
 
 type SettingsValues = z.infer<typeof settingsSchema>
@@ -36,7 +38,8 @@ export function SettingsForm({ email, initialValues }: Props) {
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       full_name: initialValues.full_name,
-      timezone: (initialValues.timezone as 'Asia/Jakarta' | 'Asia/Makassar' | 'Asia/Jayapura') ?? 'Asia/Jakarta',
+      // Runtime validation instead of unsafe type cast
+      timezone: isValidTimezone(initialValues.timezone) ? initialValues.timezone : DEFAULT_TIMEZONE,
     },
   })
 
@@ -97,9 +100,11 @@ export function SettingsForm({ email, initialValues }: Props) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Asia/Jakarta">WIB — Waktu Indonesia Barat (UTC+7)</SelectItem>
-                    <SelectItem value="Asia/Makassar">WITA — Waktu Indonesia Tengah (UTC+8)</SelectItem>
-                    <SelectItem value="Asia/Jayapura">WIT — Waktu Indonesia Timur (UTC+9)</SelectItem>
+                    {TIMEZONES.map((tz) => (
+                      <SelectItem key={tz.value} value={tz.value}>
+                        {tz.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />

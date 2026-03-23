@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { addDays } from 'date-fns'
 import { createAdminClient } from '@/utils/supabase/server'
 import { sendPaymentSuccessEmail, sendPaymentFailedEmail } from '@/lib/email'
+import { SUBSCRIPTION_DURATION_DAYS } from '@/lib/constants'
 
 interface DuitkuCallbackPayload {
   merchantCode: string
@@ -19,6 +20,25 @@ interface DuitkuCallbackPayload {
   settlementDate?: string
 }
 
+/**
+ * POST /api/webhooks/duitku
+ *
+ * Duitku payment callback handler. Called by Duitku after a payment attempt.
+ *
+ * Signature validation (MD5):
+ *   MD5(merchantCode + amount + merchantOrderId + apiKey)
+ *
+ * resultCode values:
+ *   '00' = success (payment completed)
+ *   '01' = pending (awaiting payment)
+ *   other = failed
+ *
+ * Idempotency: checks for an existing 'paid' record before processing
+ * to prevent double-crediting if Duitku sends duplicate callbacks.
+ *
+ * merchantOrderId format: SUB_{userId}_{timestamp}
+ * userId is extracted from index [1] after splitting by '_'.
+ */
 export async function POST(request: NextRequest) {
   const apiKey = process.env.DUITKU_API_KEY
   const merchantCode = process.env.DUITKU_MERCHANT_CODE
@@ -40,7 +60,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Bad Parameter' }, { status: 400 })
   }
 
-  // Validate Duitku signature: MD5(merchantCode + amount + merchantOrderId + apiKey)
+  // Validate signature: MD5(merchantCode + amount + merchantOrderId + apiKey)
   const expectedSignature = crypto
     .createHash('md5')
     .update(`${mc}${amount}${merchantOrderId}${apiKey}`)
@@ -52,7 +72,7 @@ export async function POST(request: NextRequest) {
 
   const supabase = await createAdminClient()
 
-  // Idempotency check - prevent double processing
+  // Idempotency check — prevent double processing on duplicate callbacks
   const { data: existing } = await supabase
     .from('payments')
     .select('id')
@@ -78,13 +98,13 @@ export async function POST(request: NextRequest) {
     })
     .eq('merchant_order_id', merchantOrderId)
 
-  // Update subscription on successful payment
+  // Activate premium subscription on successful payment
   if (isPaid) {
     // merchantOrderId format: SUB_{userId}_{timestamp}
     const parts = merchantOrderId.split('_')
     const userId = parts[1]
     if (userId) {
-      const subscriptionEndsAt = addDays(new Date(), 30).toISOString()
+      const subscriptionEndsAt = addDays(new Date(), SUBSCRIPTION_DURATION_DAYS).toISOString()
       await supabase
         .from('profiles')
         .update({
@@ -95,7 +115,7 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', userId)
 
-      // Kirim email konfirmasi pembayaran (non-blocking)
+      // Send payment confirmation email (non-blocking — failure should not affect response)
       const { data: profile } = await supabase
         .from('profiles')
         .select('email, full_name')
@@ -113,7 +133,7 @@ export async function POST(request: NextRequest) {
       }
     }
   } else if (newStatus === 'failed') {
-    // Kirim email pembayaran gagal (non-blocking)
+    // Send payment failure email (non-blocking)
     const parts = merchantOrderId.split('_')
     const userId = parts[1]
     if (userId) {

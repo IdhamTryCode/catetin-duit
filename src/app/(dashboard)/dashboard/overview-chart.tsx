@@ -1,6 +1,7 @@
 'use client'
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { formatIDRCompact } from '@/lib/utils'
 
 interface ChartData {
   month: string
@@ -9,17 +10,14 @@ interface ChartData {
 }
 
 export function OverviewChart({ data }: { data: ChartData[] }) {
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0, notation: 'compact' }).format(value)
-
   return (
     <ResponsiveContainer width="100%" height={280}>
       <BarChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-        <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 11 }} width={80} />
+        <YAxis tickFormatter={(v) => formatIDRCompact(Number(v))} tick={{ fontSize: 11 }} width={80} />
         <Tooltip
-          formatter={(value) => formatCurrency(Number(value))}
+          formatter={(value) => formatIDRCompact(Number(value))}
           contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
         />
         <Legend />

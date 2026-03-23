@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Copy, RefreshCw, Check, ExternalLink } from 'lucide-react'
+import { BOT_USERNAME } from '@/lib/constants'
 
-const BOT_USERNAME = 'CatetinDuitDe_bot'
 const BOT_URL = `https://t.me/${BOT_USERNAME}`
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

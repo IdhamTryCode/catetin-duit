@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import Link from 'next/link'
 import { type TransactionRow } from '@/types'
 import { TransactionsTable } from './transactions-table'
+import { parsePageParam } from '@/lib/utils'
+import { PAGE_SIZE } from '@/lib/constants'
 
 export default async function TransactionsPage({
   searchParams,
@@ -20,8 +22,8 @@ export default async function TransactionsPage({
     .single()
 
   const timezone = profile?.timezone ?? 'Asia/Jakarta'
-  const page = Number(searchParams?.page ?? 1)
-  const pageSize = 20
+  const page = parsePageParam(searchParams?.page)
+  const pageSize = PAGE_SIZE
   const typeFilter = searchParams?.type
 
   let query = supabase

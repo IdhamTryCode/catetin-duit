@@ -1,13 +1,18 @@
 import { Resend } from 'resend'
+import { TRIAL_DURATION_DAYS, SUBSCRIPTION_PRICE } from '@/lib/constants'
+import { formatIDR } from '@/lib/utils'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 // TODO: Ganti ke domain sendiri setelah verifikasi di resend.com/domains
 const FROM = process.env.EMAIL_FROM ?? 'Catetin Duit <onboarding@resend.dev>'
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://catetinduit.vercel.app'
+
+/** Base app URL — must be set in environment variables for production emails */
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ''
 
 // ─── Template helpers ────────────────────────────────────────────────────────
 
+/** Wraps email content in the standard HTML email shell (header + footer). */
 function baseLayout(content: string): string {
   return `<!DOCTYPE html>
 <html lang="id">
@@ -61,6 +66,7 @@ function button(text: string, href: string) {
   return `<a href="${href}" style="display:inline-block;background:#3b82f6;color:#fff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:8px;text-decoration:none;margin:8px 0 16px">${text}</a>`
 }
 
+/** Renders a shaded info box with multiple lines of text. */
 function infoBox(lines: string[]) {
   const items = lines.map(l => `<tr><td style="padding:6px 0;font-size:14px;color:#3f3f46">${l}</td></tr>`).join('')
   return `<table style="background:#f4f4f5;border-radius:8px;padding:16px 20px;margin:16px 0;width:100%">${items}</table>`
@@ -68,13 +74,18 @@ function infoBox(lines: string[]) {
 
 // ─── Email senders ────────────────────────────────────────────────────────────
 
+/**
+ * Send a welcome email to a new user after registration.
+ * @param to - Recipient email address
+ * @param name - User's full name (first name extracted internally)
+ */
 export async function sendWelcomeEmail(to: string, name: string) {
   const firstName = name.split(' ')[0]
   const html = baseLayout(`
     ${h1(`Selamat datang, ${firstName}! 🎉`)}
     ${p('Akun Catetin Duit kamu sudah siap. Mulai catat keuangan lebih mudah dengan menghubungkan Telegram kamu.')}
     ${infoBox([
-      '✅ Trial gratis <strong>7 hari</strong> sudah aktif',
+      `✅ Trial gratis <strong>${TRIAL_DURATION_DAYS} hari</strong> sudah aktif`,
       '📱 Hubungkan Telegram untuk mulai mencatat',
       '📊 Dashboard web sudah bisa diakses',
     ])}
@@ -91,18 +102,26 @@ export async function sendWelcomeEmail(to: string, name: string) {
   })
 }
 
+/**
+ * Send a trial expiry reminder email (H-3 or H-1).
+ * @param to - Recipient email address
+ * @param name - User's full name
+ * @param daysLeft - Number of days remaining (3 or 1)
+ * @param trialEndsAt - ISO date string of trial end date
+ */
 export async function sendTrialReminderEmail(to: string, name: string, daysLeft: number, trialEndsAt: string) {
   const firstName = name.split(' ')[0]
   const formattedDate = new Date(trialEndsAt).toLocaleDateString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
+  const priceFormatted = formatIDR(SUBSCRIPTION_PRICE)
 
   const html = baseLayout(`
     ${h1(`Trial kamu berakhir ${daysLeft === 1 ? 'besok' : `dalam ${daysLeft} hari`} ⏰`)}
     ${p(`Halo ${firstName}, trial gratis kamu akan berakhir pada <strong>${formattedDate}</strong>.`)}
     ${p('Setelah trial berakhir, kamu tidak bisa lagi mencatat via Telegram. Upgrade ke Premium untuk tetap bisa mencatat tanpa batas.')}
     ${infoBox([
-      '💎 Premium: Rp 29.000/bulan',
+      `💎 Premium: ${priceFormatted}/bulan`,
       '✅ Pencatatan via Telegram tanpa batas',
       '📊 Dashboard & laporan lengkap',
       '🔒 Data tersimpan selamanya',
@@ -119,14 +138,20 @@ export async function sendTrialReminderEmail(to: string, name: string, daysLeft:
   })
 }
 
+/**
+ * Send an email notifying the user that their trial has expired.
+ * @param to - Recipient email address
+ * @param name - User's full name
+ */
 export async function sendTrialExpiredEmail(to: string, name: string) {
   const firstName = name.split(' ')[0]
+  const priceFormatted = formatIDR(SUBSCRIPTION_PRICE)
   const html = baseLayout(`
     ${h1('Trial kamu sudah berakhir 😔')}
     ${p(`Halo ${firstName}, trial gratis kamu sudah berakhir. Pencatatan via Telegram untuk saat ini dinonaktifkan.`)}
-    ${p('Tapi tenang! Upgrade ke Premium hanya Rp 29.000/bulan dan semua fitur langsung aktif kembali.')}
+    ${p(`Tapi tenang! Upgrade ke Premium hanya ${priceFormatted}/bulan dan semua fitur langsung aktif kembali.`)}
     ${infoBox([
-      '💎 Harga: Rp 29.000/bulan',
+      `💎 Harga: ${priceFormatted}/bulan`,
       '⚡ Aktivasi instan setelah pembayaran',
       '📱 Telegram langsung aktif kembali',
     ])}
@@ -141,6 +166,14 @@ export async function sendTrialExpiredEmail(to: string, name: string) {
   })
 }
 
+/**
+ * Send a payment success confirmation email.
+ * @param to - Recipient email address
+ * @param name - User's full name
+ * @param amount - Amount paid in IDR
+ * @param reference - Duitku payment reference number
+ * @param subscriptionEndsAt - ISO date string when premium ends
+ */
 export async function sendPaymentSuccessEmail(
   to: string,
   name: string,
@@ -149,9 +182,7 @@ export async function sendPaymentSuccessEmail(
   subscriptionEndsAt: string,
 ) {
   const firstName = name.split(' ')[0]
-  const formattedAmount = new Intl.NumberFormat('id-ID', {
-    style: 'currency', currency: 'IDR', maximumFractionDigits: 0,
-  }).format(amount)
+  const formattedAmount = formatIDR(amount)
   const formattedDate = new Date(subscriptionEndsAt).toLocaleDateString('id-ID', {
     day: 'numeric', month: 'long', year: 'numeric',
   })
@@ -177,6 +208,11 @@ export async function sendPaymentSuccessEmail(
   })
 }
 
+/**
+ * Send a payment failure notification email.
+ * @param to - Recipient email address
+ * @param name - User's full name
+ */
 export async function sendPaymentFailedEmail(to: string, name: string) {
   const firstName = name.split(' ')[0]
   const html = baseLayout(`
@@ -195,18 +231,26 @@ export async function sendPaymentFailedEmail(to: string, name: string) {
   })
 }
 
+/**
+ * Send a premium expiry reminder email (H-3 or H-1).
+ * @param to - Recipient email address
+ * @param name - User's full name
+ * @param daysLeft - Number of days remaining (3 or 1)
+ * @param subscriptionEndsAt - ISO date string when subscription ends
+ */
 export async function sendPremiumExpiringEmail(to: string, name: string, daysLeft: number, subscriptionEndsAt: string) {
   const firstName = name.split(' ')[0]
   const formattedDate = new Date(subscriptionEndsAt).toLocaleDateString('id-ID', {
     day: 'numeric', month: 'long', year: 'numeric',
   })
+  const priceFormatted = formatIDR(SUBSCRIPTION_PRICE)
 
   const html = baseLayout(`
     ${h1(`Premium berakhir dalam ${daysLeft} hari ⏰`)}
     ${p(`Halo ${firstName}, langganan Premium kamu akan berakhir pada <strong>${formattedDate}</strong>.`)}
     ${p('Perpanjang sekarang untuk memastikan pencatatan keuanganmu tidak terganggu.')}
     ${infoBox([
-      '💎 Perpanjang: Rp 29.000/bulan',
+      `💎 Perpanjang: ${priceFormatted}/bulan`,
       '⚡ Aktif langsung setelah pembayaran',
     ])}
     ${button('Perpanjang Premium', `${APP_URL}/dashboard/subscription`)}

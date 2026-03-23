@@ -12,14 +12,7 @@ import {
 import { signOut } from '@/app/(auth)/actions'
 import { Crown, LogOut, Settings } from 'lucide-react'
 import Link from 'next/link'
-
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  trial: { label: 'Trial', variant: 'secondary' },
-  premium: { label: '✦ Premium', variant: 'default' },
-  trial_expired: { label: 'Expired', variant: 'destructive' },
-  grace_period: { label: 'Grace', variant: 'outline' },
-  cancelled: { label: 'Cancelled', variant: 'outline' },
-}
+import { SUBSCRIPTION_STATUS_BADGE } from '@/lib/constants'
 
 export async function Header() {
   const supabase = await createClient()
@@ -36,7 +29,7 @@ export async function Header() {
     : profile?.email?.slice(0, 2).toUpperCase() ?? 'U'
 
   const status = profile?.subscription_status ?? 'trial'
-  const statusCfg = statusConfig[status] ?? statusConfig.trial
+  const statusCfg = SUBSCRIPTION_STATUS_BADGE[status] ?? SUBSCRIPTION_STATUS_BADGE.trial
   const firstName = profile?.full_name?.split(' ')[0] ?? 'Kamu'
 
   return (
