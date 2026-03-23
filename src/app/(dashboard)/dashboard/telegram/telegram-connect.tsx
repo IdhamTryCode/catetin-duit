@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Copy, RefreshCw, Check } from 'lucide-react'
+import { Copy, RefreshCw, Check, ExternalLink } from 'lucide-react'
+
+const BOT_USERNAME = 'CatetinDuitDe_bot'
+const BOT_URL = `https://t.me/${BOT_USERNAME}`
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function TelegramConnect({ userId }: { userId: string }) {
@@ -84,9 +87,15 @@ export function TelegramConnect({ userId }: { userId: string }) {
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
+          <a href={`${BOT_URL}?start=connect`} target="_blank" rel="noopener noreferrer">
+            <Button className="w-full gap-2" variant="default">
+              <ExternalLink className="h-4 w-4" />
+              Buka @{BOT_USERNAME} di Telegram
+            </Button>
+          </a>
           <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-            <li>Buka Telegram dan cari bot @CatetinDuitBot</li>
-            <li>Klik Start atau kirim /start</li>
+            <li>Klik tombol di atas untuk buka bot</li>
+            <li>Kirim /start jika belum pernah chat</li>
             <li>Kirim kode di atas ke bot</li>
             <li>Akun akan otomatis terhubung</li>
           </ol>
