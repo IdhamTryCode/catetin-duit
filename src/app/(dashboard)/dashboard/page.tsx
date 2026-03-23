@@ -1,11 +1,11 @@
 import { createClient } from '@/utils/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { formatInTimeZone } from 'date-fns-tz'
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
-import { TrendingUp, TrendingDown, Wallet, MessageCircle, AlertTriangle } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, MessageCircle, AlertTriangle, ArrowRight, Zap } from 'lucide-react'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { type RecentTransaction, type ChartDataPoint, getJoinedCategory } from '@/types'
 import { OverviewChart } from './overview-chart'
 
@@ -46,7 +46,7 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-    .limit(10)
+    .limit(8)
 
   const chartData: ChartDataPoint[] = []
   for (let i = 5; i >= 0; i--) {
@@ -95,141 +95,152 @@ export default async function DashboardPage() {
     ? Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
 
+  const currentMonth = format(new Date(), 'MMMM yyyy')
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Overview</h1>
-        <p className="text-muted-foreground">Ringkasan keuangan bulan ini</p>
+    <div className="space-y-5 max-w-2xl mx-auto md:max-w-none">
+
+      {/* Page title - desktop only */}
+      <div className="hidden md:block">
+        <h1 className="text-xl font-bold">Beranda</h1>
+        <p className="text-sm text-muted-foreground">{currentMonth}</p>
       </div>
 
-      {/* Telegram banner */}
+      {/* Mobile: month label */}
+      <div className="md:hidden">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{currentMonth}</p>
+      </div>
+
+      {/* Alert banners */}
       {!profile?.telegram_chat_id && (
-        <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <MessageCircle className="h-5 w-5 text-blue-600" />
-            <div>
-              <p className="font-medium text-blue-900 dark:text-blue-100">Hubungkan Telegram kamu</p>
-              <p className="text-sm text-blue-700 dark:text-blue-300">Catat transaksi langsung dari chat Telegram</p>
-            </div>
-          </div>
-          <Button asChild size="sm">
-            <Link href="/dashboard/telegram">Hubungkan</Link>
-          </Button>
-        </div>
+        <Alert className="border-blue-500/30 bg-blue-500/10 [&>svg]:text-blue-600">
+          <MessageCircle className="h-4 w-4" />
+          <AlertTitle className="text-blue-900 dark:text-blue-100">Hubungkan Telegram</AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-2">
+            <span className="text-blue-700/80 dark:text-blue-300/80">Catat transaksi langsung dari chat</span>
+            <Button asChild size="sm" className="h-7 text-xs flex-shrink-0">
+              <Link href="/dashboard/telegram">Hubungkan</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
 
-      {/* Trial expiry banner */}
       {profile?.subscription_status === 'trial' && daysLeft !== null && daysLeft <= 3 && (
-        <div className="flex items-center justify-between bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-yellow-600" />
-            <div>
-              <p className="font-medium text-yellow-900 dark:text-yellow-100">
-                Trial berakhir dalam {daysLeft} hari
-              </p>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                Upgrade ke Premium untuk terus menggunakan semua fitur
-              </p>
-            </div>
-          </div>
-          <Button asChild size="sm">
-            <Link href="/dashboard/subscription">Upgrade</Link>
-          </Button>
-        </div>
+        <Alert className="border-amber-500/30 bg-amber-500/10 [&>svg]:text-amber-600">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle className="text-amber-900 dark:text-amber-100">
+            Trial berakhir dalam {daysLeft} hari
+          </AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-2">
+            <span className="text-amber-700/80 dark:text-amber-300/80">Upgrade Premium Rp 29.000/bulan</span>
+            <Button asChild size="sm" className="h-7 text-xs flex-shrink-0">
+              <Link href="/dashboard/subscription">Upgrade</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Pemasukan</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatIDR(income)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Bulan ini</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Pengeluaran</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{formatIDR(expense)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Bulan ini</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Net Cashflow</CardTitle>
-            <Wallet className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${netCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatIDR(netCashflow)}
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="border-green-500/20 bg-green-500/10">
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-green-700 dark:text-green-400">Pemasukan</span>
+              <TrendingUp className="h-3.5 w-3.5 text-green-600" />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Bulan ini</p>
+            <p className="text-base md:text-xl font-bold text-green-700 dark:text-green-400 truncate">
+              {formatIDR(income)}
+            </p>
+            <p className="text-[10px] text-green-600/60 mt-0.5">bulan ini</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-red-500/20 bg-red-500/10">
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-red-700 dark:text-red-400">Pengeluaran</span>
+              <TrendingDown className="h-3.5 w-3.5 text-red-600" />
+            </div>
+            <p className="text-base md:text-xl font-bold text-red-700 dark:text-red-400 truncate">
+              {formatIDR(expense)}
+            </p>
+            <p className="text-[10px] text-red-600/60 mt-0.5">bulan ini</p>
+          </CardContent>
+        </Card>
+
+        <Card className={netCashflow >= 0 ? 'border-primary/20 bg-primary/10' : 'border-red-500/20 bg-red-500/10'}>
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-xs font-medium ${netCashflow >= 0 ? 'text-primary' : 'text-red-700 dark:text-red-400'}`}>Net</span>
+              <Wallet className={`h-3.5 w-3.5 ${netCashflow >= 0 ? 'text-primary' : 'text-red-600'}`} />
+            </div>
+            <p className={`text-base md:text-xl font-bold truncate ${netCashflow >= 0 ? 'text-primary' : 'text-red-700 dark:text-red-400'}`}>
+              {formatIDR(netCashflow)}
+            </p>
+            <p className={`text-[10px] mt-0.5 ${netCashflow >= 0 ? 'text-primary/60' : 'text-red-600/60'}`}>cashflow</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Chart */}
       <Card>
-        <CardHeader>
-          <CardTitle>Income vs Pengeluaran (6 Bulan)</CardTitle>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold">Tren 6 Bulan</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 pb-4">
           <OverviewChart data={chartData} />
         </CardContent>
       </Card>
 
       {/* Recent Transactions */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Transaksi Terbaru</CardTitle>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/transactions">Lihat Semua</Link>
+      <Card className="overflow-hidden">
+        <CardHeader className="px-4 py-3 border-b flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-sm font-semibold">Transaksi Terbaru</CardTitle>
+          <Button asChild variant="ghost" size="sm" className="h-7 text-xs gap-1 text-primary px-2">
+            <Link href="/dashboard/transactions">
+              Lihat semua <ArrowRight className="h-3 w-3" />
+            </Link>
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {recentTransactions.length > 0 ? (
-            <div className="space-y-3">
+            <div className="divide-y">
               {recentTransactions.map((tx) => {
                 const category = getJoinedCategory(tx.categories)
+                const emoji = category?.icon ?? (tx.type === 'income' ? '💰' : '💸')
                 return (
-                  <div key={tx.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">
-                        {category?.icon ?? (tx.type === 'income' ? '💰' : '💸')}
-                      </span>
-                      <div>
-                        <p className="text-sm font-medium">
-                          {tx.description ?? category?.name ?? 'Transaksi'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatInTimeZone(new Date(tx.transaction_date), timezone, 'dd MMM yyyy')}
-                        </p>
-                      </div>
+                  <div key={tx.id} className="flex items-center gap-3 px-4 py-3">
+                    <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0 text-base">
+                      {emoji}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {tx.needs_review && (
-                        <Badge variant="destructive" className="text-xs">Review</Badge>
-                      )}
-                      <span className={`font-medium text-sm ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                        {tx.type === 'income' ? '+' : '-'}{formatIDR(tx.amount)}
-                      </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {tx.description ?? category?.name ?? 'Transaksi'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatInTimeZone(new Date(tx.transaction_date), timezone, 'dd MMM')}
+                        {category?.name && ` · ${category.name}`}
+                      </p>
                     </div>
+                    <span className={`text-sm font-semibold flex-shrink-0 ${tx.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
+                      {tx.type === 'income' ? '+' : '-'}{formatIDR(tx.amount)}
+                    </span>
                   </div>
                 )
               })}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>Belum ada transaksi bulan ini</p>
-              <p className="text-sm mt-1">Mulai catat via Telegram atau tambah manual</p>
+            <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                <Zap className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium">Belum ada transaksi</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Chat ke bot Telegram untuk mulai mencatat
+              </p>
+              <Button asChild size="sm" className="mt-4">
+                <Link href="/dashboard/telegram">Hubungkan Telegram</Link>
+              </Button>
             </div>
           )}
         </CardContent>

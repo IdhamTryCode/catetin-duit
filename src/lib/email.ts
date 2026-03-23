@@ -2,7 +2,8 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const FROM = 'Catetin Duit <noreply@catetinduit.com>'
+// TODO: Ganti ke domain sendiri setelah verifikasi di resend.com/domains
+const FROM = process.env.EMAIL_FROM ?? 'Catetin Duit <onboarding@resend.dev>'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://catetinduit.vercel.app'
 
 // ─── Template helpers ────────────────────────────────────────────────────────

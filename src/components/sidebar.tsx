@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -12,7 +13,7 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Beranda', icon: LayoutDashboard },
   { href: '/dashboard/transactions', label: 'Transaksi', icon: ArrowLeftRight },
   { href: '/dashboard/telegram', label: 'Telegram', icon: MessageCircle },
   { href: '/dashboard/subscription', label: 'Langganan', icon: CreditCard },
@@ -23,30 +24,41 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="w-64 bg-card border-r flex flex-col h-full">
-      <div className="p-6 border-b">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="text-2xl">💰</span>
-          <span className="font-bold text-lg">Catetin Duit</span>
+    <aside className="hidden md:flex w-60 flex-col h-full bg-card border-r">
+      {/* Logo */}
+      <div className="h-16 px-5 flex items-center border-b">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+            <span className="text-primary-foreground font-bold text-sm">C</span>
+          </div>
+          <span className="font-bold text-base">Catetin Duit</span>
         </Link>
       </div>
-      <nav className="flex-1 p-4 space-y-1">
-        {navItems.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-              pathname === href
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </Link>
-        ))}
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-4 space-y-0.5">
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href
+          return (
+            <Button
+              key={href}
+              asChild
+              variant={isActive ? 'default' : 'ghost'}
+              className={cn('w-full justify-start gap-3', !isActive && 'text-muted-foreground')}
+            >
+              <Link href={href}>
+                <Icon className={cn('h-4 w-4 flex-shrink-0', isActive && 'stroke-[2.5]')} />
+                {label}
+              </Link>
+            </Button>
+          )
+        })}
       </nav>
+
+      {/* Footer */}
+      <div className="px-4 py-4 border-t">
+        <p className="text-[11px] text-muted-foreground">© 2026 Catetin Duit</p>
+      </div>
     </aside>
   )
 }
