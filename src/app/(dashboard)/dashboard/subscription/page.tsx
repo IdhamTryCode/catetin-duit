@@ -108,11 +108,11 @@ export default async function SubscriptionPage() {
             <form action="/api/subscription/create" method="POST">
               <Button type="submit" className="w-full" size="lg">
                 <Zap className="h-4 w-4 mr-2" />
-                Bayar dengan QRIS — Rp 29.000
+                Upgrade Premium — Rp 29.000
               </Button>
             </form>
             <p className="text-xs text-center text-muted-foreground">
-              Pembayaran aman via Tripay. QRIS bisa digunakan di semua e-wallet.
+              Pembayaran aman via Duitku. Mendukung QRIS, transfer bank, dan e-wallet.
             </p>
           </CardContent>
         </Card>

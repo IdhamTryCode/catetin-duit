@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { sendWelcomeEmail } from '@/lib/email'
 
 export async function login(formData: FormData) {
   const supabase = await createClient()
@@ -35,10 +36,17 @@ export async function signup(formData: FormData) {
     },
   }
 
-  const { error } = await supabase.auth.signUp(data)
+  const { data: authData, error } = await supabase.auth.signUp(data)
 
   if (error) {
     return { error: error.message }
+  }
+
+  // Kirim email welcome (non-blocking)
+  const email = data.email
+  const fullName = (data.options?.data?.full_name as string | undefined) ?? ''
+  if (authData.user && email) {
+    sendWelcomeEmail(email, fullName || email).catch(() => {})
   }
 
   revalidatePath('/', 'layout')

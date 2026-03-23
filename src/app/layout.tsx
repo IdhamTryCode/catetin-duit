@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
@@ -5,9 +6,14 @@ import { Toaster } from '@/components/ui/sonner'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
-export const metadata: Metadata = {
-  title: 'Catetin Duit — Asisten Keuangan AI via Telegram',
-  description: 'Catat transaksi keuangan otomatis via Telegram dengan AI. Dashboard web interaktif untuk laporan keuangan bisnis kamu.',
+export function generateMetadata(): Metadata {
+  return {
+    title: 'Catetin Duit — Asisten Keuangan AI via Telegram',
+    description: 'Catat transaksi keuangan otomatis via Telegram dengan AI. Dashboard web interaktif untuk laporan keuangan bisnis kamu.',
+    other: {
+      ...Sentry.getTraceData(),
+    },
+  }
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

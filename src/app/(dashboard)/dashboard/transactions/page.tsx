@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import Link from 'next/link'
+import { type TransactionRow } from '@/types'
 import { TransactionsTable } from './transactions-table'
 
 export default async function TransactionsPage({
@@ -11,6 +12,7 @@ export default async function TransactionsPage({
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('timezone')
@@ -24,7 +26,10 @@ export default async function TransactionsPage({
 
   let query = supabase
     .from('transactions')
-    .select('id, amount, type, description, transaction_date, needs_review, source, created_at, categories(name, icon)', { count: 'exact' })
+    .select(
+      'id, amount, type, description, transaction_date, needs_review, source, created_at, categories(name, icon)',
+      { count: 'exact' }
+    )
     .eq('user_id', user!.id)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
@@ -34,7 +39,8 @@ export default async function TransactionsPage({
     query = query.eq('type', typeFilter)
   }
 
-  const { data: transactions, count } = await query
+  const { data, count } = await query
+  const transactions = (data ?? []) as TransactionRow[]
 
   return (
     <div className="space-y-6">
@@ -51,32 +57,20 @@ export default async function TransactionsPage({
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Button
-              asChild
-              variant={!typeFilter ? 'default' : 'outline'}
-              size="sm"
-            >
+            <Button asChild variant={!typeFilter ? 'default' : 'outline'} size="sm">
               <Link href="/dashboard/transactions">Semua</Link>
             </Button>
-            <Button
-              asChild
-              variant={typeFilter === 'income' ? 'default' : 'outline'}
-              size="sm"
-            >
+            <Button asChild variant={typeFilter === 'income' ? 'default' : 'outline'} size="sm">
               <Link href="/dashboard/transactions?type=income">Pemasukan</Link>
             </Button>
-            <Button
-              asChild
-              variant={typeFilter === 'expense' ? 'default' : 'outline'}
-              size="sm"
-            >
+            <Button asChild variant={typeFilter === 'expense' ? 'default' : 'outline'} size="sm">
               <Link href="/dashboard/transactions?type=expense">Pengeluaran</Link>
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           <TransactionsTable
-            transactions={transactions ?? []}
+            transactions={transactions}
             timezone={timezone}
             totalCount={count ?? 0}
             page={page}

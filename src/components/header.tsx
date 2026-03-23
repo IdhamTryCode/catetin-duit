@@ -3,8 +3,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -60,24 +60,26 @@ export async function Header() {
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium">{profile?.full_name || 'User'}</p>
-                <p className="text-xs text-muted-foreground">{profile?.email}</p>
-              </div>
-            </DropdownMenuLabel>
+            <div className="px-2 py-1.5">
+              <p className="text-sm font-medium">{profile?.full_name || 'User'}</p>
+              <p className="text-xs text-muted-foreground">{profile?.email}</p>
+            </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <a href="/dashboard/settings" className="w-full">Pengaturan</a>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <form action={signOut}>
-              <DropdownMenuItem className="text-destructive cursor-pointer">
-                <button type="submit" className="w-full text-left">
-                  Keluar
-                </button>
+            <DropdownMenuGroup>
+              <DropdownMenuItem>
+                <a href="/dashboard/settings" className="w-full">Pengaturan</a>
               </DropdownMenuItem>
-            </form>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <form action={signOut}>
+                <DropdownMenuItem className="text-destructive cursor-pointer">
+                  <button type="submit" className="w-full text-left">
+                    Keluar
+                  </button>
+                </DropdownMenuItem>
+              </form>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
