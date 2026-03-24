@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import Link from 'next/link'
 import { Download, Plus } from 'lucide-react'
-import { type TransactionRow } from '@/types'
+import { type TransactionRow, type CategoryJoin } from '@/types'
 import { TransactionsTable } from './transactions-table'
 import { parsePageParam } from '@/lib/utils'
 import { PAGE_SIZE, type Plan } from '@/lib/constants'
@@ -43,7 +43,18 @@ export default async function TransactionsPage({
   if (typeFilter) query = query.eq('type', typeFilter)
 
   const { data, count } = await query
-  const transactions = (data ?? []) as TransactionRow[]
+  const transactions: TransactionRow[] = (data ?? []).map(tx => ({
+    id: tx.id,
+    amount: tx.amount,
+    type: tx.type,
+    description: tx.description,
+    transaction_date: tx.transaction_date,
+    needs_review: tx.needs_review,
+    source: tx.source,
+    created_at: tx.created_at,
+    // Supabase many-to-one join returns an object at runtime, not an array
+    categories: (tx.categories as unknown) as CategoryJoin,
+  }))
 
   return (
     <div className="space-y-4 md:space-y-6">

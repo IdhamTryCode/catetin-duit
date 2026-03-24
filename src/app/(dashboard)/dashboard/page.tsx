@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { type RecentTransaction, type ChartDataPoint, getJoinedCategory } from '@/types'
+import { type RecentTransaction, type ChartDataPoint, type CategoryJoin, getJoinedCategory } from '@/types'
 import { OverviewChart } from './overview-chart'
 import { formatIDR, formatDateShort } from '@/lib/utils'
 import { TRIAL_WARNING_THRESHOLD_DAYS } from '@/lib/constants'
@@ -85,7 +85,16 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
   return {
     income,
     expense,
-    recentTransactions: (recentTransactions ?? []) as RecentTransaction[],
+    recentTransactions: (recentTransactions ?? []).map(tx => ({
+      id: tx.id,
+      amount: tx.amount,
+      type: tx.type,
+      description: tx.description,
+      transaction_date: tx.transaction_date,
+      needs_review: tx.needs_review,
+      // Supabase many-to-one join returns an object at runtime, not an array
+      categories: (tx.categories as unknown) as CategoryJoin,
+    })) as RecentTransaction[],
     chartData,
   }
 }

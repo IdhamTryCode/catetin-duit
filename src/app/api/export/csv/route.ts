@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { format } from 'date-fns'
-import { type Plan, PLAN_LIMITS } from '@/lib/constants'
+import { type Plan } from '@/lib/constants'
 
 /** Escape a CSV cell value — wraps in quotes and escapes inner quotes */
 function csvCell(value: string | number | null | undefined): string {
@@ -29,8 +29,6 @@ export async function GET() {
     )
   }
 
-  const timezone = profile?.timezone ?? 'Asia/Jakarta'
-
   // ── Fetch all transactions (no pagination for export) ──────────────────────
   const { data: transactions, error } = await supabase
     .from('transactions')
@@ -45,7 +43,7 @@ export async function GET() {
   const headers = ['Tanggal', 'Jenis', 'Kategori', 'Deskripsi', 'Jumlah (Rp)', 'Sumber']
 
   const rows = (transactions ?? []).map((tx) => {
-    const category = tx.categories as { name: string } | null
+    const category = (tx.categories as unknown) as { name: string } | null
     return [
       csvCell(tx.transaction_date?.slice(0, 10) ?? ''),
       csvCell(tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran'),

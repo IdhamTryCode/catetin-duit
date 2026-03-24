@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Search, Shield, ShieldOff } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -35,7 +35,8 @@ interface ApiResponse {
 function PlanSelect({ user, onChanged }: { user: UserRow; onChanged: () => void }) {
   const [isPending, startTransition] = useTransition()
 
-  function handleChange(plan: string) {
+  function handleChange(plan: string | null) {
+    if (!plan) return
     startTransition(async () => {
       const fd = new FormData()
       fd.append('user_id', user.id)
@@ -96,7 +97,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState('')
   const [isLoading, setIsLoading] = useState(true)
 
-  async function load() {
+  const load = useCallback(async () => {
     setIsLoading(true)
     try {
       const res = await fetch(`/api/admin/users?q=${encodeURIComponent(search)}`)
@@ -108,9 +109,9 @@ export default function AdminUsersPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [search])
 
-  useEffect(() => { load() }, [search])
+  useEffect(() => { load() }, [load])
 
   const statusColor: Record<string, string> = {
     trial:         'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',

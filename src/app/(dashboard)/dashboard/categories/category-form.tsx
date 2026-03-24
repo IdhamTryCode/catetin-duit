@@ -72,7 +72,7 @@ export function CategoryForm({ initialValues, onSuccess, onCancel }: Props) {
       <div className="space-y-1.5">
         <Label>Jenis Transaksi</Label>
         <input type="hidden" name="type" value={type} />
-        <Select value={type} onValueChange={setType}>
+        <Select value={type} onValueChange={(v) => { if (v) setType(v) }}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
