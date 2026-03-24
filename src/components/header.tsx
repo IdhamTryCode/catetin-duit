@@ -10,9 +10,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { signOut } from '@/app/(auth)/actions'
-import { Crown, LogOut, Settings } from 'lucide-react'
+import { Crown, LogOut, Settings, Sparkles, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
-import { SUBSCRIPTION_STATUS_BADGE } from '@/lib/constants'
+import Image from 'next/image'
+import { PLAN_BADGE, type Plan } from '@/lib/constants'
 
 export async function Header() {
   const supabase = await createClient()
@@ -20,7 +21,7 @@ export async function Header() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, email, subscription_status')
+    .select('full_name, email, plan, role')
     .eq('id', user!.id)
     .single()
 
@@ -28,17 +29,15 @@ export async function Header() {
     ? profile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : profile?.email?.slice(0, 2).toUpperCase() ?? 'U'
 
-  const status = profile?.subscription_status ?? 'trial'
-  const statusCfg = SUBSCRIPTION_STATUS_BADGE[status] ?? SUBSCRIPTION_STATUS_BADGE.trial
+  const plan = (profile?.plan ?? 'free') as Plan
+  const planCfg = PLAN_BADGE[plan]
   const firstName = profile?.full_name?.split(' ')[0] ?? 'Kamu'
 
   return (
     <header className="h-16 border-b bg-card px-4 md:px-6 flex items-center justify-between flex-shrink-0">
       {/* Mobile: Logo | Desktop: Page title area */}
       <div className="flex items-center gap-2 md:hidden">
-        <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-xs">C</span>
-        </div>
+        <Image src="/logo.png" alt="Catetin Duit" width={28} height={28} className="rounded-lg" />
         <span className="font-bold text-sm">Catetin Duit</span>
       </div>
 
@@ -51,10 +50,10 @@ export async function Header() {
 
       {/* Right side */}
       <div className="flex items-center gap-2">
-        {/* Status badge */}
-        <Badge variant={statusCfg.variant} className="hidden sm:inline-flex gap-1">
-          {status === 'premium' && <Crown className="h-3 w-3" />}
-          {statusCfg.label}
+        {/* Plan badge */}
+        <Badge variant={planCfg.variant} className="hidden sm:inline-flex gap-1">
+          {planCfg.icon && <Sparkles className="h-3 w-3" />}
+          {planCfg.label}
         </Badge>
 
         {/* Avatar dropdown */}
@@ -73,6 +72,14 @@ export async function Header() {
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
+              {profile?.role === 'admin' && (
+                <DropdownMenuItem>
+                  <Link href="/admin" className="flex items-center gap-2 w-full text-primary">
+                    <ShieldCheck className="h-4 w-4" />
+                    Admin Panel
+                  </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem>
                 <Link href="/dashboard/subscription" className="flex items-center gap-2 w-full">
                   <Crown className="h-4 w-4" />

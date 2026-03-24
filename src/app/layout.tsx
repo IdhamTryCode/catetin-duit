@@ -10,6 +10,9 @@ export function generateMetadata(): Metadata {
   return {
     title: 'Catetin Duit — Asisten Keuangan AI via Telegram',
     description: 'Catat transaksi keuangan otomatis via Telegram dengan AI. Dashboard web interaktif untuk laporan keuangan bisnis kamu.',
+    icons: {
+      icon: '/favicon.ico',
+    },
     other: {
       ...Sentry.getTraceData(),
     },

@@ -3,21 +3,60 @@
  * Centralizes all magic values to avoid duplication and ease configuration.
  */
 
-// ─── Subscription & Pricing ──────────────────────────────────────────────────
+// ─── Plans & Pricing ──────────────────────────────────────────────────────────
 
-/** Monthly subscription price in IDR */
-export const SUBSCRIPTION_PRICE = 29_000
+/** Valid plan identifiers */
+export const PLANS = ['free', 'starter', 'premium'] as const
+export type Plan = (typeof PLANS)[number]
 
-/** Duration of a premium subscription in days */
+/** Monthly price per plan in IDR (free = 0) */
+export const PLAN_PRICES: Record<Plan, number> = {
+  free:    0,
+  starter: 14_999,
+  premium: 39_999,
+}
+
+/** Per-plan feature limits. Use Infinity for unlimited. */
+export const PLAN_LIMITS: Record<Plan, {
+  dailyTransactions: number
+  historyDays: number
+  customCategories: number
+}> = {
+  free:    { dailyTransactions: 5,        historyDays: 30,       customCategories: 0        },
+  starter: { dailyTransactions: 20,       historyDays: 180,      customCategories: 5        },
+  premium: { dailyTransactions: Infinity, historyDays: Infinity, customCategories: Infinity },
+}
+
+/** Display config for each plan — used in header badge & subscription page */
+export const PLAN_BADGE: Record<Plan, {
+  label: string
+  variant: 'default' | 'secondary' | 'destructive' | 'outline'
+  icon: boolean
+}> = {
+  free:    { label: 'Free',        variant: 'secondary', icon: false },
+  starter: { label: '✦ Starter',   variant: 'outline',   icon: false },
+  premium: { label: '✦ Premium',   variant: 'default',   icon: true  },
+}
+
+/** Human-readable plan names */
+export const PLAN_NAMES: Record<Plan, string> = {
+  free:    'Free',
+  starter: 'Starter',
+  premium: 'Premium',
+}
+
+// ─── Subscription lifecycle ───────────────────────────────────────────────────
+
+/** Duration of a paid subscription in days */
 export const SUBSCRIPTION_DURATION_DAYS = 30
 
-/** Duration of the free trial in days */
+/** Duration of the free trial period in days */
 export const TRIAL_DURATION_DAYS = 7
 
 /** Days before trial ends to send reminder emails (H-3 and H-1) */
 export const TRIAL_REMINDER_DAYS = [3, 1] as const
 
-/** Days before premium ends to send reminder emails (H-3 and H-1) */
+/** Days before subscription ends to send reminder emails */
 export const PREMIUM_REMINDER_DAYS = [3, 1] as const
 
 /** Show trial expiry alert on dashboard when days remaining ≤ this value */
@@ -56,16 +95,6 @@ export type ValidTimezone = (typeof VALID_TIMEZONES)[number]
 /** Fallback timezone when none is set */
 export const DEFAULT_TIMEZONE: ValidTimezone = 'Asia/Jakarta'
 
-// ─── Subscription Status Badge Config (used in Header) ────────────────────────
-
-/** Badge variant config for each subscription status — used in the header badge */
-export const SUBSCRIPTION_STATUS_BADGE: Record<
-  string,
-  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
-> = {
-  trial: { label: 'Trial', variant: 'secondary' },
-  premium: { label: '✦ Premium', variant: 'default' },
-  trial_expired: { label: 'Expired', variant: 'destructive' },
-  grace_period: { label: 'Grace', variant: 'outline' },
-  cancelled: { label: 'Cancelled', variant: 'outline' },
-}
+// ─── Legacy: kept for backward-compat during transition ───────────────────────
+/** @deprecated Use PLAN_BADGE keyed by profile.plan instead */
+export const SUBSCRIPTION_PRICE = 14_999

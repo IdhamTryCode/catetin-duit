@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -10,14 +11,16 @@ import {
   MessageCircle,
   CreditCard,
   Settings,
+  Tag,
 } from 'lucide-react'
 
 const navItems = [
-  { href: '/dashboard', label: 'Beranda', icon: LayoutDashboard },
-  { href: '/dashboard/transactions', label: 'Transaksi', icon: ArrowLeftRight },
-  { href: '/dashboard/telegram', label: 'Telegram', icon: MessageCircle },
-  { href: '/dashboard/subscription', label: 'Langganan', icon: CreditCard },
-  { href: '/dashboard/settings', label: 'Pengaturan', icon: Settings },
+  { href: '/dashboard',              label: 'Beranda',    icon: LayoutDashboard },
+  { href: '/dashboard/transactions', label: 'Transaksi',  icon: ArrowLeftRight  },
+  { href: '/dashboard/categories',   label: 'Kategori',   icon: Tag             },
+  { href: '/dashboard/telegram',     label: 'Telegram',   icon: MessageCircle   },
+  { href: '/dashboard/subscription', label: 'Langganan',  icon: CreditCard      },
+  { href: '/dashboard/settings',     label: 'Pengaturan', icon: Settings        },
 ]
 
 export function Sidebar() {
@@ -28,9 +31,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="h-16 px-5 flex items-center border-b">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-            <span className="text-primary-foreground font-bold text-sm">C</span>
-          </div>
+          <Image src="/logo.png" alt="Catetin Duit" width={32} height={32} className="rounded-lg flex-shrink-0" />
           <span className="font-bold text-base">Catetin Duit</span>
         </Link>
       </div>

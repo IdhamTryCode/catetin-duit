@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { checkDailyTransactionLimit } from '@/lib/plan'
+import { type Plan } from '@/lib/constants'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -32,6 +34,23 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // ── Enforce daily transaction limit based on user's plan ──────────────────
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('plan')
+    .eq('id', user.id)
+    .single()
+
+  const plan = (profile?.plan ?? 'free') as Plan
+  const { allowed, used, limit } = await checkDailyTransactionLimit(supabase, user.id, plan)
+
+  if (!allowed) {
+    return NextResponse.json(
+      { error: `Batas transaksi harian plan ${plan} sudah tercapai (${used}/${limit}).`, used, limit },
+      { status: 429 },
+    )
+  }
 
   const body = await request.json()
   const { amount, type, description, category_id, transaction_date } = body

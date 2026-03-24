@@ -9,6 +9,7 @@ export type SubscriptionStatus =
   | 'cancelled'
   | 'grace_period'
 export type UserRole = 'user' | 'admin'
+export type Plan = 'free' | 'starter' | 'premium'
 
 // ─── Database Row Types ────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ export interface Profile {
   email: string
   full_name: string | null
   role: UserRole
+  plan: Plan
   telegram_chat_id: number | null
   subscription_status: SubscriptionStatus
   trial_started_at: string
@@ -62,8 +64,8 @@ export interface Profile {
 
 // ─── Query Result Types (with joins) ──────────────────────────────────────────
 
-/** Category as returned by Supabase single-table join (always array, even for FK) */
-export type CategoryJoin = Pick<Category, 'name' | 'icon'>[]
+/** Category as returned by Supabase many-to-one join (object, not array) */
+export type CategoryJoin = Pick<Category, 'name' | 'icon'> | null
 
 export interface TransactionWithCategory extends Transaction {
   categories: CategoryJoin
@@ -109,7 +111,7 @@ export type ActionResult<T = undefined> =
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
 
-/** Extract the first item from a Supabase join array, or null */
+/** Return the joined category from a Supabase many-to-one join, or null */
 export function getJoinedCategory(categories: CategoryJoin): Pick<Category, 'name' | 'icon'> | null {
-  return categories?.[0] ?? null
+  return categories ?? null
 }
