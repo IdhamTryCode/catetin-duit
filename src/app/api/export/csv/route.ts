@@ -43,7 +43,7 @@ export async function GET() {
   const headers = ['Tanggal', 'Jenis', 'Kategori', 'Deskripsi', 'Jumlah (Rp)', 'Sumber']
 
   const rows = (transactions ?? []).map((tx) => {
-    const category = (tx.categories as unknown) as { name: string } | null
+    const category = tx.categories as { name: string } | null
     return [
       csvCell(tx.transaction_date?.slice(0, 10) ?? ''),
       csvCell(tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran'),

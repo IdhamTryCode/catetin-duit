@@ -54,9 +54,9 @@ export async function POST(request: NextRequest) {
     (payload as Record<string, string>)[key] = value.toString()
   })
 
-  const { merchantCode: mc, amount, merchantOrderId, resultCode, signature } = payload
+  const { merchantCode: mc, amount, merchantOrderId, resultCode, signature, reference } = payload
 
-  if (!mc || !amount || !merchantOrderId || !resultCode || !signature) {
+  if (!mc || !amount || !merchantOrderId || !resultCode || !signature || !reference) {
     return NextResponse.json({ error: 'Bad Parameter' }, { status: 400 })
   }
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
   const { data: existing } = await supabase
     .from('payments')
     .select('id')
-    .eq('idempotency_key', payload.reference)
+    .eq('idempotency_key', reference)
     .eq('status', 'paid')
     .single()
 

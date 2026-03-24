@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { type Database } from '@/types/database.types'
 
 // Service role client — bypasses RLS, only use in server-side cron/admin routes
 export function createAdminClient() {
@@ -9,7 +10,7 @@ export function createAdminClient() {
     throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
   }
 
-  return createClient(url, serviceRoleKey, {
+  return createClient<Database>(url, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

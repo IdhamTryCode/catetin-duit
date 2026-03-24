@@ -127,6 +127,7 @@ export async function GET(req: NextRequest) {
     results.errors.push(`premium_query: ${premiumErr.message}`)
   } else {
     for (const profile of premiumUsers ?? []) {
+      if (!profile.subscription_ends_at) continue
       const days = daysBetween(profile.subscription_ends_at)
       if (!(PREMIUM_REMINDER_DAYS as readonly number[]).includes(days)) continue
 

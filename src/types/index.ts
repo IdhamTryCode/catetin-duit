@@ -1,4 +1,19 @@
-// ─── Enums ────────────────────────────────────────────────────────────────────
+import { type Tables } from './database.types'
+
+// ─── Re-export database row types (derived from generated schema) ─────────────
+
+export type { Tables } from './database.types'
+
+/** Raw DB row for categories table */
+export type Category = Tables<'categories'>
+
+/** Raw DB row for transactions table */
+export type Transaction = Tables<'transactions'>
+
+/** Raw DB row for profiles table */
+export type Profile = Tables<'profiles'>
+
+// ─── Narrowed string unions (DB stores these as plain `string`) ───────────────
 
 export type TransactionType = 'income' | 'expense'
 export type TransactionSource = 'telegram' | 'web' | 'import'
@@ -11,60 +26,13 @@ export type SubscriptionStatus =
 export type UserRole = 'user' | 'admin'
 export type Plan = 'free' | 'starter' | 'premium'
 
-// ─── Database Row Types ────────────────────────────────────────────────────────
-
-export interface Category {
-  id: string
-  user_id: string | null
-  name: string
-  type: TransactionType | 'both'
-  icon: string | null
-  color: string | null
-  is_default: boolean
-  created_at: string
-}
-
-export interface Transaction {
-  id: string
-  user_id: string
-  amount: number
-  type: TransactionType
-  category_id: string | null
-  description: string | null
-  source: TransactionSource
-  raw_message: string | null
-  ai_confidence: number | null
-  needs_review: boolean
-  transaction_date: string
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-  deleted_by: string | null
-}
-
-export interface Profile {
-  id: string
-  email: string
-  full_name: string | null
-  role: UserRole
-  plan: Plan
-  telegram_chat_id: number | null
-  subscription_status: SubscriptionStatus
-  trial_started_at: string
-  trial_ends_at: string
-  subscription_started_at: string | null
-  subscription_ends_at: string | null
-  grace_period_ends_at: string | null
-  timezone: string
-  onboarding_completed: boolean
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-}
-
 // ─── Query Result Types (with joins) ──────────────────────────────────────────
 
-/** Category as returned by Supabase many-to-one join (object, not array) */
+/**
+ * Category as returned by Supabase many-to-one join.
+ * The client is typed with Database so Supabase infers this as a single
+ * object (not an array) based on the FK relationship metadata.
+ */
 export type CategoryJoin = Pick<Category, 'name' | 'icon'> | null
 
 export interface TransactionWithCategory extends Transaction {
@@ -75,10 +43,10 @@ export interface TransactionWithCategory extends Transaction {
 export interface RecentTransaction {
   id: string
   amount: number
-  type: TransactionType
+  type: string
   description: string | null
   transaction_date: string
-  needs_review: boolean
+  needs_review: boolean | null
   categories: CategoryJoin
 }
 
@@ -86,11 +54,11 @@ export interface RecentTransaction {
 export interface TransactionRow {
   id: string
   amount: number
-  type: TransactionType
+  type: string
   description: string | null
   transaction_date: string
-  needs_review: boolean
-  source: TransactionSource
+  needs_review: boolean | null
+  source: string
   created_at: string
   categories: CategoryJoin
 }
