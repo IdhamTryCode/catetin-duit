@@ -1,10 +1,9 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthFromRequest } from '@/utils/supabase/server'
 import { type Plan } from '@/lib/constants'
 
-export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export async function GET(request: NextRequest) {
+  const { supabase, user } = await getAuthFromRequest(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: profile } = await supabase

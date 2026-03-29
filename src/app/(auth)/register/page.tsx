@@ -28,6 +28,7 @@ type RegisterValues = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
@@ -47,6 +48,10 @@ export default function RegisterPage() {
     if (result?.error) {
       setError(result.error)
       setIsLoading(false)
+    } else {
+      // Signup berhasil — tampilkan pesan konfirmasi email
+      setSuccess(true)
+      setIsLoading(false)
     }
   }
 
@@ -63,6 +68,13 @@ export default function RegisterPage() {
         </>
       }
     >
+      {success && (
+        <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 px-4 py-3 rounded-lg text-center space-y-1">
+          <p className="font-semibold">Pendaftaran berhasil! 🎉</p>
+          <p className="text-emerald-600">Cek email kamu untuk mengkonfirmasi akun, lalu login.</p>
+        </div>
+      )}
+
       {/* Feature strip */}
       <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground py-1">
         <span>✓ 7 hari gratis</span>

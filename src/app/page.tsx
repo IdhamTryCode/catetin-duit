@@ -156,12 +156,7 @@ export default async function HomePage() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <div
-              className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-sm"
-              style={{ boxShadow: '0 2px 10px oklch(0.48 0.128 162 / 0.32)' }}
-            >
-              <Image src="/logo.png" alt="Catetin Duit" width={20} height={20} className="rounded-sm" />
-            </div>
+            <Image src="/logo.png" alt="Catetin Duit" width={32} height={32} className="rounded-lg" />
             <span className="font-bold text-base tracking-tight">Catetin Duit</span>
           </Link>
 
@@ -463,9 +458,7 @@ export default async function HomePage() {
             {/* Brand */}
             <div className="space-y-4">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Image src="/logo.png" alt="Catetin Duit" width={20} height={20} className="rounded-sm" />
-                </div>
+                <Image src="/logo.png" alt="Catetin Duit" width={32} height={32} className="rounded-lg" />
                 <span className="font-bold text-base tracking-tight">Catetin Duit</span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-[230px]">

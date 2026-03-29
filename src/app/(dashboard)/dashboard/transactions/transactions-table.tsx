@@ -120,23 +120,19 @@ export function TransactionsTable({ transactions, timezone, totalCount, page, pa
         </TableBody>
       </Table>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-muted-foreground">{totalCount} transaksi</p>
-          <div className="flex gap-2">
-            {page > 1 && (
-              <Button asChild variant="outline" size="sm">
-                <Link href={`?page=${page - 1}`}>Sebelumnya</Link>
-              </Button>
-            )}
-            {page < totalPages && (
-              <Button asChild variant="outline" size="sm">
-                <Link href={`?page=${page + 1}`}>Selanjutnya</Link>
-              </Button>
-            )}
-          </div>
+      <div className="flex items-center justify-between mt-4">
+        <p className="text-sm text-muted-foreground">
+          {totalCount} transaksi · Halaman {page} dari {totalPages || 1}
+        </p>
+        <div className="flex gap-2">
+          <Button asChild variant="outline" size="sm" aria-disabled={page <= 1} className={page <= 1 ? 'pointer-events-none opacity-40' : ''}>
+            <Link href={`?page=${page - 1}`}>Sebelumnya</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm" aria-disabled={page >= totalPages} className={page >= totalPages ? 'pointer-events-none opacity-40' : ''}>
+            <Link href={`?page=${page + 1}`}>Selanjutnya</Link>
+          </Button>
         </div>
-      )}
+      </div>
     </div>
   )
 }

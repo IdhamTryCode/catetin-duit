@@ -30,15 +30,13 @@ export function Sidebar() {
       {/* Logo */}
       <div className="h-16 px-5 flex items-center border-b border-sidebar-border">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0 shadow-sm">
-            <Image
-              src="/logo.png"
-              alt="Catetin Duit"
-              width={20}
-              height={20}
-              className="rounded-sm"
-            />
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Catetin Duit"
+            width={32}
+            height={32}
+            className="rounded-lg flex-shrink-0"
+          />
           <span className="font-bold text-base text-sidebar-foreground tracking-tight">
             Catetin Duit
           </span>

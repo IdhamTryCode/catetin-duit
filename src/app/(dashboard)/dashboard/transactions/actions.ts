@@ -83,7 +83,7 @@ export async function updateTransaction(formData: FormData) {
     return { error: parsed.error.issues[0].message }
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('transactions')
     .update({
       amount: parsed.data.amount,
@@ -95,11 +95,14 @@ export async function updateTransaction(formData: FormData) {
     })
     .eq('id', id)
     .eq('user_id', user.id)
+    .is('deleted_at', null)
+    .select('id')
 
   if (error) return { error: error.message }
+  if (!updated || updated.length === 0) return { error: 'Transaksi tidak ditemukan atau tidak memiliki akses' }
 
-  revalidatePath('/dashboard')
-  revalidatePath('/dashboard/transactions')
+  revalidatePath('/dashboard', 'layout')
+  revalidatePath('/dashboard/transactions', 'layout')
   redirect('/dashboard/transactions')
 }
 

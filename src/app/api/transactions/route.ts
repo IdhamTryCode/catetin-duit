@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { getAuthFromRequest } from '@/utils/supabase/server'
 import { checkDailyTransactionLimit } from '@/lib/plan'
 import { type Plan } from '@/lib/constants'
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user } = await getAuthFromRequest(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
@@ -31,8 +30,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user } = await getAuthFromRequest(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // ── Enforce daily transaction limit based on user's plan ──────────────────

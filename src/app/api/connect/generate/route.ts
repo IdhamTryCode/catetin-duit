@@ -1,14 +1,13 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthFromRequest } from '@/utils/supabase/server'
 
 function generateCode(length = 6): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
 }
 
-export async function POST() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export async function POST(request: NextRequest) {
+  const { supabase, user } = await getAuthFromRequest(request)
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
