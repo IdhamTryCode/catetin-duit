@@ -34,33 +34,37 @@ export async function Header() {
   const firstName = profile?.full_name?.split(' ')[0] ?? 'Kamu'
 
   return (
-    <header className="h-16 border-b bg-card px-4 md:px-6 flex items-center justify-between flex-shrink-0">
-      {/* Mobile: Logo | Desktop: Page title area */}
+    <header className="glass-header h-16 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-10 relative">
+      {/* Mobile: Logo */}
       <div className="flex items-center gap-2 md:hidden">
         <Image src="/logo.png" alt="Catetin Duit" width={28} height={28} className="rounded-lg" />
-        <span className="font-bold text-sm">Catetin Duit</span>
+        <span className="font-bold text-sm text-foreground tracking-tight">Catetin Duit</span>
       </div>
 
       {/* Desktop: greeting */}
       <div className="hidden md:block">
         <p className="text-sm text-muted-foreground">
-          Halo, <span className="font-semibold text-foreground">{firstName}</span> 👋
+          Halo,{' '}
+          <span className="font-semibold text-foreground">{firstName}</span> 👋
         </p>
       </div>
 
       {/* Right side */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
         {/* Plan badge */}
-        <Badge variant={planCfg.variant} className="hidden sm:inline-flex gap-1">
+        <Badge
+          variant={planCfg.variant}
+          className="hidden sm:inline-flex gap-1 text-xs font-semibold"
+        >
           {planCfg.icon && <Sparkles className="h-3 w-3" />}
           {planCfg.label}
         </Badge>
 
         {/* Avatar dropdown */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="rounded-full outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-primary">
-            <Avatar className="h-8 w-8 cursor-pointer">
-              <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+          <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+            <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-primary/25 ring-offset-1 ring-offset-background">
+              <AvatarFallback className="text-xs bg-primary text-primary-foreground font-bold">
                 {initials}
               </AvatarFallback>
             </Avatar>

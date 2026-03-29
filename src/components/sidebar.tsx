@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -27,38 +26,57 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="hidden md:flex w-60 flex-col h-full bg-card border-r">
+    <aside className="hidden md:flex w-64 flex-col h-full bg-sidebar flex-shrink-0">
       {/* Logo */}
-      <div className="h-16 px-5 flex items-center border-b">
+      <div className="h-16 px-5 flex items-center border-b border-sidebar-border">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <Image src="/logo.png" alt="Catetin Duit" width={32} height={32} className="rounded-lg flex-shrink-0" />
-          <span className="font-bold text-base">Catetin Duit</span>
+          <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0 shadow-sm">
+            <Image
+              src="/logo.png"
+              alt="Catetin Duit"
+              width={20}
+              height={20}
+              className="rounded-sm"
+            />
+          </div>
+          <span className="font-bold text-base text-sidebar-foreground tracking-tight">
+            Catetin Duit
+          </span>
         </Link>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href
           return (
-            <Button
+            <Link
               key={href}
-              asChild
-              variant={isActive ? 'default' : 'ghost'}
-              className={cn('w-full justify-start gap-3', !isActive && 'text-muted-foreground')}
+              href={href}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
+                isActive
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+              )}
             >
-              <Link href={href}>
-                <Icon className={cn('h-4 w-4 flex-shrink-0', isActive && 'stroke-[2.5]')} />
-                {label}
-              </Link>
-            </Button>
+              <Icon
+                className={cn(
+                  'h-[17px] w-[17px] flex-shrink-0',
+                  isActive ? 'stroke-[2.5]' : 'stroke-[1.75]'
+                )}
+              />
+              {label}
+            </Link>
           )
         })}
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t">
-        <p className="text-[11px] text-muted-foreground">© 2026 Catetin Duit</p>
+      <div className="px-4 py-4 border-t border-sidebar-border">
+        <p className="text-[11px] text-sidebar-foreground/30 font-medium">
+          © 2026 Catetin Duit
+        </p>
       </div>
     </aside>
   )

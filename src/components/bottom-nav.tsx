@@ -16,8 +16,8 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t md:hidden">
-      <div className="grid grid-cols-4 h-16">
+    <nav className="glass-nav fixed bottom-0 left-0 right-0 z-50 md:hidden">
+      <div className="grid grid-cols-4 h-[62px] px-1">
         {tabs.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href
           return (
@@ -25,14 +25,32 @@ export function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 text-xs transition-colors',
-                isActive
-                  ? 'text-primary'
-                  : 'text-muted-foreground'
+                'flex flex-col items-center justify-center gap-1 transition-all duration-200 relative select-none',
+                isActive ? 'text-primary' : 'text-muted-foreground/70'
               )}
             >
-              <Icon className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
-              <span className={cn('text-[10px] font-medium', isActive && 'font-semibold')}>
+              {/* Active pill indicator at top */}
+              <span
+                className={cn(
+                  'absolute top-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-300',
+                  isActive ? 'w-8 bg-primary' : 'w-0 bg-transparent'
+                )}
+              />
+
+              <Icon
+                className={cn(
+                  'transition-all duration-200',
+                  isActive
+                    ? 'h-[22px] w-[22px] stroke-[2.5] scale-110'
+                    : 'h-[22px] w-[22px] stroke-[1.75]'
+                )}
+              />
+              <span
+                className={cn(
+                  'text-[10px] tracking-tight transition-all duration-200',
+                  isActive ? 'font-semibold' : 'font-medium'
+                )}
+              >
                 {label}
               </span>
             </Link>

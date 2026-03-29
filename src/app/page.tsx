@@ -151,23 +151,43 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Navbar */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Catetin Duit" width={32} height={32} className="rounded-lg" />
-            <span className="font-bold text-lg">Catetin Duit</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#cara-kerja" className="hover:text-foreground transition-colors">Cara Kerja</a>
-            <a href="#fitur" className="hover:text-foreground transition-colors">Fitur</a>
-            <a href="#harga" className="hover:text-foreground transition-colors">Harga</a>
+      <header className="sticky top-0 z-50 glass-header">
+        <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between gap-4">
+
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
+            <div
+              className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-sm"
+              style={{ boxShadow: '0 2px 10px oklch(0.48 0.128 162 / 0.32)' }}
+            >
+              <Image src="/logo.png" alt="Catetin Duit" width={20} height={20} className="rounded-sm" />
+            </div>
+            <span className="font-bold text-base tracking-tight">Catetin Duit</span>
+          </Link>
+
+          {/* Desktop nav links */}
+          <nav className="hidden md:flex items-center gap-0.5">
+            {([['#cara-kerja', 'Cara Kerja'], ['#fitur', 'Fitur'], ['#harga', 'Harga']] as const).map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/6 rounded-lg transition-all duration-150"
+              >
+                {label}
+              </a>
+            ))}
           </nav>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild>
+
+          {/* CTA buttons */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
               <Link href="/login">Masuk</Link>
             </Button>
-            <Button size="sm" asChild>
-              <Link href="/register">Coba Gratis</Link>
+            <Button size="sm" asChild className="gap-1.5 shadow-sm" style={{ boxShadow: '0 2px 10px oklch(0.48 0.128 162 / 0.28)' }}>
+              <Link href="/register">
+                Coba Gratis
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
             </Button>
           </div>
         </div>
@@ -330,7 +350,7 @@ export default async function HomePage() {
               Mulai gratis, upgrade kapan saja
             </p>
           </div>
-          <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto pt-4">
             {/* Trial */}
             <Card className="border-border/50">
               <CardContent className="pt-6 space-y-5">
@@ -357,7 +377,7 @@ export default async function HomePage() {
             </Card>
 
             {/* Premium */}
-            <Card className="border-primary relative animate-pulse-ring">
+            <Card className="border-primary relative animate-pulse-ring overflow-visible">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                 <Badge className="bg-primary text-primary-foreground px-3">
                   <Zap className="h-3 w-3 mr-1" />
@@ -435,16 +455,77 @@ export default async function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-8">
-        <div className="mx-auto max-w-6xl px-4 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Catetin Duit" width={24} height={24} className="rounded-md" />
-            <span className="font-medium text-foreground">Catetin Duit</span>
+      <footer className="border-t border-border/40 bg-muted/25">
+        {/* Main content */}
+        <div className="mx-auto max-w-6xl px-4 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
+
+            {/* Brand */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <Image src="/logo.png" alt="Catetin Duit" width={20} height={20} className="rounded-sm" />
+                </div>
+                <span className="font-bold text-base tracking-tight">Catetin Duit</span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-[230px]">
+                Asisten keuangan AI via Telegram. Catat, pantau, dan analisa keuanganmu dengan mudah.
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span className="text-xs text-muted-foreground">Layanan aktif 24/7</span>
+              </div>
+            </div>
+
+            {/* Links */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold text-foreground uppercase tracking-widest">Produk</p>
+                <ul className="space-y-2.5">
+                  <li><a href="#cara-kerja" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150">Cara Kerja</a></li>
+                  <li><a href="#fitur" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150">Fitur</a></li>
+                  <li><a href="#harga" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150">Harga</a></li>
+                </ul>
+              </div>
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold text-foreground uppercase tracking-widest">Akun</p>
+                <ul className="space-y-2.5">
+                  <li><Link href="/login" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150">Masuk</Link></li>
+                  <li><Link href="/register" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150">Daftar Gratis</Link></li>
+                </ul>
+              </div>
+            </div>
+
+            {/* CTA mini card */}
+            <div>
+              <div className="rounded-xl border border-primary/20 bg-primary/6 p-5 space-y-3">
+                <p className="text-sm font-semibold text-foreground">Mulai gratis sekarang</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  7 hari trial penuh. Tidak perlu kartu kredit. Cancel kapan saja.
+                </p>
+                <Button size="sm" className="w-full gap-1.5" asChild>
+                  <Link href="/register">
+                    Coba Gratis <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
           </div>
-          <p>© {new Date().getFullYear()} Catetin Duit. Dibuat dengan ❤️ untuk UMKM Indonesia.</p>
-          <div className="flex gap-4">
-            <Link href="/login" className="hover:text-foreground transition-colors">Masuk</Link>
-            <Link href="/register" className="hover:text-foreground transition-colors">Daftar</Link>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="border-t border-border/40">
+          <div className="mx-auto max-w-6xl px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} Catetin Duit. Dibuat untuk UMKM Indonesia.
+            </span>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Shield className="h-3 w-3 text-primary/70" />
+              <span>Data terenkripsi & aman</span>
+            </div>
           </div>
         </div>
       </footer>
