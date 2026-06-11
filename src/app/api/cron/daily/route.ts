@@ -5,7 +5,7 @@ import {
   sendTrialExpiredEmail,
   sendPremiumExpiringEmail,
 } from '@/lib/email'
-import { TRIAL_REMINDER_DAYS, PREMIUM_REMINDER_DAYS } from '@/lib/constants'
+import { TRIAL_REMINDER_DAYS, PREMIUM_REMINDER_DAYS, FREE_PROMO } from '@/lib/constants'
 
 /**
  * Validate that the request originates from Vercel Cron or an authorized manual trigger.
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
 
   if (trialErr) {
     results.errors.push(`trial_query: ${trialErr.message}`)
-  } else {
+  } else if (!FREE_PROMO) {
     for (const profile of trialUsers ?? []) {
       const days = daysBetween(profile.trial_ends_at)
       if (!(TRIAL_REMINDER_DAYS as readonly number[]).includes(days)) continue
@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
 
   if (expiredErr) {
     results.errors.push(`expired_query: ${expiredErr.message}`)
-  } else {
+  } else if (!FREE_PROMO) {
     for (const profile of expiredTrialUsers ?? []) {
       await supabase
         .from('profiles')

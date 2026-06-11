@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
-import { type Plan, PLAN_LIMITS } from '@/lib/constants'
+import { PLAN_LIMITS, resolvePlan } from '@/lib/constants'
 import { z } from 'zod'
 
 const categorySchema = z.object({
@@ -33,7 +33,7 @@ export async function createCategory(formData: FormData) {
     .eq('id', user.id)
     .single()
 
-  const plan = (profile?.plan ?? 'free') as Plan
+  const plan = resolvePlan(profile?.plan)
   const limit = PLAN_LIMITS[plan].customCategories
 
   if (limit === 0) {

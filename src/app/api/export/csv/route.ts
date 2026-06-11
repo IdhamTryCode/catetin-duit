@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthFromRequest } from '@/utils/supabase/server'
 import { format } from 'date-fns'
-import { type Plan } from '@/lib/constants'
+import { resolvePlan } from '@/lib/constants'
 
 /** Escape a CSV cell value — wraps in quotes and escapes inner quotes */
 function csvCell(value: string | number | null | undefined): string {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     .eq('id', user.id)
     .single()
 
-  const plan = (profile?.plan ?? 'free') as Plan
+  const plan = resolvePlan(profile?.plan)
   if (plan === 'free') {
     return NextResponse.json(
       { error: 'Fitur export CSV tersedia untuk plan Starter dan Premium.' },

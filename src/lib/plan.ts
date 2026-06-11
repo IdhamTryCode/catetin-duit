@@ -1,6 +1,6 @@
 import { type SupabaseClient } from '@supabase/supabase-js'
 import { format } from 'date-fns'
-import { PLAN_LIMITS, type Plan } from '@/lib/constants'
+import { PLAN_LIMITS, resolvePlan, type Plan } from '@/lib/constants'
 
 /**
  * Check whether a user can still create a transaction today based on their plan's
@@ -14,7 +14,8 @@ export async function checkDailyTransactionLimit(
   userId: string,
   plan: Plan,
 ): Promise<{ allowed: boolean; used: number; limit: number }> {
-  const limit = PLAN_LIMITS[plan].dailyTransactions
+  // Promo override: saat FREE_PROMO aktif, semua user dianggap PROMO_PLAN.
+  const limit = PLAN_LIMITS[resolvePlan(plan)].dailyTransactions
 
   // Pro plan has no limit — skip DB query entirely
   if (limit === Infinity) {

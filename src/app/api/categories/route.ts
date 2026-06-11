@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthFromRequest } from '@/utils/supabase/server'
-import { type Plan } from '@/lib/constants'
+import { resolvePlan } from '@/lib/constants'
 
 export async function GET(request: NextRequest) {
   const { supabase, user } = await getAuthFromRequest(request)
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     .eq('id', user.id)
     .single()
 
-  const plan = (profile?.plan ?? 'free') as Plan
+  const plan = resolvePlan(profile?.plan)
 
   // Fetch user's custom categories
   const { data: userCategories } = await supabase

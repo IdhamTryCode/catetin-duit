@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createClient, createAdminClient } from '@/utils/supabase/server'
-import { SUBSCRIPTION_PRICE, PAYMENT_EXPIRY_MINUTES } from '@/lib/constants'
+import { SUBSCRIPTION_PRICE, PAYMENT_EXPIRY_MINUTES, FREE_PROMO } from '@/lib/constants'
 
 const IS_SANDBOX = process.env.NODE_ENV !== 'production'
 
@@ -21,6 +21,14 @@ const IS_SANDBOX = process.env.NODE_ENV !== 'production'
  * /api/webhooks/duitku will handle the payment result callback.
  */
 export async function POST() {
+  // Promo gratis aktif → semua fitur sudah terbuka, pembayaran dinonaktifkan.
+  if (FREE_PROMO) {
+    return NextResponse.json(
+      { error: 'Semua fitur sedang gratis selama masa promo. Tidak perlu berlangganan.' },
+      { status: 403 },
+    )
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

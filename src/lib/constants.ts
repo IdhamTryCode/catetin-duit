@@ -27,6 +27,22 @@ export const PLAN_LIMITS: Record<Plan, {
   premium: { dailyTransactions: Infinity, historyDays: Infinity, customCategories: Infinity },
 }
 
+// ─── Promo: "semua gratis" (sementara) ────────────────────────────────────────
+// Saklar promosi. Saat ON, SEMUA user diperlakukan sebagai PROMO_PLAN tanpa
+// batas waktu, dan blokir trial-expired dimatikan. Data user TIDAK diubah —
+// matikan flag = langsung balik ke alur berbayar normal.
+// Aktifkan dengan env: NEXT_PUBLIC_FREE_PROMO=true  (set di Vercel & .env lokal)
+export const FREE_PROMO = process.env.NEXT_PUBLIC_FREE_PROMO === 'true'
+
+/** Tier yang diberikan ke semua user selama promo aktif. */
+export const PROMO_PLAN: Plan = 'premium'
+
+/** Resolusi plan efektif: pakai PROMO_PLAN saat promo, selain itu plan asli user. */
+export function resolvePlan(rawPlan: string | null | undefined): Plan {
+  if (FREE_PROMO) return PROMO_PLAN
+  return (rawPlan ?? 'free') as Plan
+}
+
 /** Display config for each plan — used in header badge & subscription page */
 export const PLAN_BADGE: Record<Plan, {
   label: string

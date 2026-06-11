@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { type RecentTransaction, type ChartDataPoint, getJoinedCategory } from '@/types'
 import { OverviewChart } from './overview-chart'
 import { formatIDR, formatDateShort } from '@/lib/utils'
-import { TRIAL_WARNING_THRESHOLD_DAYS } from '@/lib/constants'
+import { TRIAL_WARNING_THRESHOLD_DAYS, FREE_PROMO } from '@/lib/constants'
 
 interface DashboardData {
   income: number
@@ -141,7 +141,7 @@ export default async function DashboardPage() {
         </Alert>
       )}
 
-      {profile?.plan === 'free' && profile?.subscription_status === 'trial' && daysLeft !== null && daysLeft <= TRIAL_WARNING_THRESHOLD_DAYS && (
+      {!FREE_PROMO && profile?.plan === 'free' && profile?.subscription_status === 'trial' && daysLeft !== null && daysLeft <= TRIAL_WARNING_THRESHOLD_DAYS && (
         <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-400/35 bg-amber-50/80 backdrop-blur-sm px-4 py-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">

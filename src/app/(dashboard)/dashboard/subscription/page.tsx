@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2, Crown, MessageCircle, Clock, Zap, Sparkles } from 'lucide-react'
 import { formatInTimeZone } from 'date-fns-tz'
-import { PLAN_LIMITS, PLAN_PRICES, type Plan } from '@/lib/constants'
+import { PLAN_LIMITS, PLAN_PRICES, FREE_PROMO, resolvePlan, type Plan } from '@/lib/constants'
 
 // ─── Feature list per plan ─────────────────────────────────────────────────────
 // Tandai `soon: true` untuk fitur yang belum diimplementasikan
@@ -90,7 +90,7 @@ export default async function SubscriptionPage() {
     .single()
 
   const timezone    = profile?.timezone ?? 'Asia/Jakarta'
-  const currentPlan = (profile?.plan ?? 'free') as Plan
+  const currentPlan = resolvePlan(profile?.plan)
   const status      = profile?.subscription_status ?? 'trial'
 
   const statusLabel: Record<string, string> = {
@@ -123,17 +123,19 @@ export default async function SubscriptionPage() {
               {PLAN_META[currentPlan].name}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">{statusLabel[status] ?? ''}</p>
+          <p className="text-xs text-muted-foreground mt-1">{FREE_PROMO ? '🎉 Gratis selama masa promo — semua fitur Premium terbuka tanpa batas waktu' : (statusLabel[status] ?? '')}</p>
         </CardHeader>
       </Card>
 
-      {/* Coming soon notice */}
-      <div className="flex items-start gap-3 rounded-lg border border-dashed border-amber-400/50 bg-amber-50/50 dark:bg-amber-950/20 px-4 py-3">
+      {/* Coming soon notice — disembunyikan saat promo gratis aktif */}
+      {!FREE_PROMO && (
+        <div className="flex items-start gap-3 rounded-lg border border-dashed border-amber-400/50 bg-amber-50/50 dark:bg-amber-950/20 px-4 py-3">
         <Clock className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
         <p className="text-xs text-amber-700 dark:text-amber-400">
           Payment gateway sedang dalam proses aktivasi. Sementara ini, upgrade dapat dilakukan langsung via WhatsApp — tim kami akan membantu proses pembayaran dan aktivasi.
         </p>
       </div>
+      )}
 
       {/* Plan cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -208,7 +210,7 @@ export default async function SubscriptionPage() {
                   <Button variant="outline" size="sm" className="w-full" disabled>
                     Plan Aktif
                   </Button>
-                ) : isPaid ? (
+                ) : isPaid && !FREE_PROMO ? (
                   <Button
                     asChild
                     size="sm"
