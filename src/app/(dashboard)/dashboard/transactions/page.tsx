@@ -6,7 +6,7 @@ import { Download, Plus } from 'lucide-react'
 import { type TransactionRow } from '@/types'
 import { TransactionsTable } from './transactions-table'
 import { parsePageParam } from '@/lib/utils'
-import { PAGE_SIZE, type Plan } from '@/lib/constants'
+import { PAGE_SIZE, resolvePlan } from '@/lib/constants'
 
 export default async function TransactionsPage({
   searchParams,
@@ -23,7 +23,7 @@ export default async function TransactionsPage({
     .single()
 
   const timezone   = profile?.timezone ?? 'Asia/Jakarta'
-  const plan       = (profile?.plan ?? 'free') as Plan
+  const plan       = resolvePlan(profile?.plan)
   const canExport  = plan === 'starter' || plan === 'premium'
   const page       = parsePageParam(searchParams?.page)
   const pageSize   = PAGE_SIZE

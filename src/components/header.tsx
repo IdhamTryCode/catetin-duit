@@ -13,7 +13,7 @@ import { signOut } from '@/app/(auth)/actions'
 import { Crown, LogOut, Settings, Sparkles, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { PLAN_BADGE, type Plan } from '@/lib/constants'
+import { PLAN_BADGE, resolvePlan } from '@/lib/constants'
 
 export async function Header() {
   const supabase = await createClient()
@@ -29,7 +29,7 @@ export async function Header() {
     ? profile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : profile?.email?.slice(0, 2).toUpperCase() ?? 'U'
 
-  const plan = (profile?.plan ?? 'free') as Plan
+  const plan = resolvePlan(profile?.plan)
   const planCfg = PLAN_BADGE[plan]
   const firstName = profile?.full_name?.split(' ')[0] ?? 'Kamu'
 
