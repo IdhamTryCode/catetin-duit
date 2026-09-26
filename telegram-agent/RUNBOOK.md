@@ -88,6 +88,51 @@ curl -s "https://api.telegram.org/bot$TOKEN/getMyCommands" | python3 -m json.too
 
 Menu harus berisi **hanya** 4 command Catetin Duit.
 
+## Observability
+
+### Log persisten
+
+Log gateway ada di `~/openclaw-logs/gateway.log` (`logging.file` di
+`openclaw.json`). **Jangan kembalikan ke default** — default `/tmp/openclaw`
+dipangkas OpenClaw setelah 24 jam dan hilang saat reboot, sehingga laporan
+pengguna tidak bisa ditelusuri keesokan harinya.
+
+OpenClaw tidak merotasi path kustom, jadi rotasi diurus `scripts/rotate-logs.sh`
+(logrotate user-level, `copytruncate` karena gateway memegang file handle
+terbuka; simpan 14 hari, maks 50 MB per file).
+
+```bash
+tail -f ~/openclaw-logs/gateway.log
+grep -i error ~/openclaw-logs/gateway.log | tail -30
+```
+
+### Healthcheck + alert Telegram
+
+`scripts/healthcheck.sh` berjalan tiap 10 menit dan mengirim peringatan ke
+chat owner kalau menemukan: service mati, restart ≥3x, OOM dalam 1 jam,
+RAM <150 MB, disk >90%, Telegram API tak menjawab, atau Supabase tak
+terjangkau. Peringatan di-throttle 1 jam per jenis masalah agar tidak spam
+saat crash-loop.
+
+Jalankan manual: `bash ~/openclaw/catetin-duit-agent/scripts/healthcheck.sh`
+(exit 0 = sehat, 1 = ada masalah). Riwayat: `~/openclaw-logs/healthcheck.log`.
+
+### Cron terpasang
+
+```
+0  3 * * *  keepalive-supabase.sh     # jaga Supabase free-tier
+0  4 * * *  rotate-logs.sh            # rotasi log
+*/10 * * * * healthcheck.sh           # monitoring + alert
+```
+
+### Typing indicator
+
+`agents.entries.catetin-duit.typingMode: "instant"` +
+`agents.defaults.typingIntervalSeconds: 6`. Latensi 5–10 detik terasa seperti
+bot mati; indikator mengetik membuatnya terasa hidup. Diset eksplisit supaya
+tidak hilang saat `doctor --fix`. Catatan: `typingIntervalSeconds` hanya valid
+di `agents.defaults`, bukan per-agent — schema menolaknya.
+
 ## Keterbatasan yang diketahui (belum diperbaiki)
 
 1. **LLM bisa mengarang balasan.** Terbukti 26 Sep: `/bantuan` membalas

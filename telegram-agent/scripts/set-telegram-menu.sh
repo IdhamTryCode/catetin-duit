@@ -32,6 +32,7 @@ sleep "${MENU_DELAY:-45}"
 
 read -r -d '' PAYLOAD <<'JSON' || true
 {"commands":[
+{"command":"start","description":"Mulai & hubungkan akun"},
 {"command":"connect","description":"Hubungkan akun web (/connect KODE)"},
 {"command":"riwayat","description":"5 transaksi terakhir"},
 {"command":"ringkasan","description":"Ringkasan keuangan bulan ini"},
