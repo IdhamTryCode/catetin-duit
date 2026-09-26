@@ -87,18 +87,21 @@ export function TelegramConnect({ userId }: { userId: string }) {
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
-          <a href={`${BOT_URL}?start=connect`} target="_blank" rel="noopener noreferrer">
+          <a href={`${BOT_URL}?start=${code}`} target="_blank" rel="noopener noreferrer">
             <Button className="w-full gap-2" variant="default">
               <ExternalLink className="h-4 w-4" />
-              Buka @{BOT_USERNAME} di Telegram
+              Hubungkan otomatis di Telegram
             </Button>
           </a>
           <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-            <li>Klik tombol di atas untuk buka bot</li>
-            <li>Kirim /start jika belum pernah chat</li>
-            <li>Kirim kode di atas ke bot</li>
-            <li>Akun akan otomatis terhubung</li>
+            <li>Klik tombol di atas — bot terbuka dengan kode sudah terisi</li>
+            <li>Tekan tombol <span className="font-medium">Start</span> di Telegram</li>
+            <li>Akun langsung terhubung</li>
           </ol>
+          <p className="text-xs text-muted-foreground">
+            Kalau tombol tidak jalan, buka bot lalu kirim manual:{' '}
+            <span className="font-mono font-medium">/connect {code}</span>
+          </p>
         </div>
       )}
     </div>

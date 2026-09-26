@@ -14,6 +14,20 @@ Use this skill when the user sends `/connect KODE` or `/start KODE` in Telegram.
 - Message starts with `/start` followed by a code (deep link)
 - Message is just `/start` (show welcome instructions)
 
+## Deciding what counts as a code
+
+A connect code is **exactly 6 characters, A-Z and 0-9 only** (uppercase it
+before use). Anything else is NOT a code.
+
+- `/start` alone → show the welcome instructions below.
+- `/start connect` → this is the old dashboard deep link, **not** a code.
+  Treat it exactly like `/start` alone.
+- `/start ABC123` → run the script with `ABC123`.
+- `/connect ABC123` → run the script with `ABC123`.
+- `/connect` with something that is not 6 alphanumeric characters → do not
+  run the script. Reply:
+  `❌ Kode harus 6 karakter (huruf & angka). Ambil kode baru di {APP_URL}/dashboard/telegram`
+
 ## How to handle `/start` with no code
 
 Reply with:

@@ -38,8 +38,15 @@ async function main() {
     process.exit(1)
   }
 
-  // Jika tidak ada kode → tampilkan instruksi
-  if (!code || code.length < 6) {
+  // Kode connect selalu 6 karakter A-Z0-9 (lihat generateCode di
+  // src/app/api/connect/generate/route.ts).
+  const CODE_RE = /^[A-Z0-9]{6}$/
+
+  // Kata yang datang dari deep link lama `t.me/bot?start=connect`, bukan kode.
+  const NOT_A_CODE = new Set(['CONNECT', 'START', 'MULAI'])
+
+  // Tidak ada kode, atau sekadar /start → tampilkan instruksi sambutan.
+  if (!code || NOT_A_CODE.has(code)) {
     console.log(
       `Halo! 👋 Selamat datang di *Catetin Duit*.\n\n` +
       `Untuk menghubungkan akun:\n` +
@@ -48,6 +55,15 @@ async function main() {
       `3. Salin kode 6 karakter yang muncul\n` +
       `4. Kirim ke sini: \`/connect KODE_KAMU\`\n\n` +
       `Belum punya akun? Daftar gratis di: ${APP_URL}/register`
+    )
+    return
+  }
+
+  // Ada isinya tapi bukan format kode → jangan query DB, beri arahan jelas.
+  if (!CODE_RE.test(code)) {
+    console.log(
+      `❌ Kode harus 6 karakter (huruf & angka).\n\n` +
+      `Ambil kode baru di: ${APP_URL}/dashboard/telegram`
     )
     return
   }
