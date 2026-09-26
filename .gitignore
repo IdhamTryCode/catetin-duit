@@ -37,3 +37,10 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# telegram agent (OpenClaw) — JANGAN pernah commit kredensial
+.env
+telegram-agent/.env
+telegram-agent/node_modules
+telegram-agent/**/*.log
+telegram-agent/.openclaw
