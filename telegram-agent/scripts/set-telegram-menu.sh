@@ -11,6 +11,11 @@
 # isi menunya sendiri di sini.
 #
 # Dipanggil otomatis lewat systemd ExecStartPost, bisa juga manual.
+#
+# PENTING: di systemd, panggil lewat `ExecStartPost=/bin/bash -c '... &'`
+# (background). ExecStartPost menahan startup, sedangkan TimeoutStartSec
+# gateway hanya 30 detik — kalau script ini blocking, systemd membunuh
+# gateway yang sebenarnya sudah ready.
 
 set -euo pipefail
 
