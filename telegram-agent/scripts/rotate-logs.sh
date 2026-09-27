@@ -36,4 +36,12 @@ EOF
 # copytruncate penting: gateway memegang file handle terbuka. Tanpa itu,
 # rotasi memindahkan inode dan gateway terus menulis ke file lama yang
 # sudah tidak terlihat.
-logrotate --state "$STATE" "$CONF"
+# logrotate ada di /usr/sbin yang TIDAK masuk PATH cron, sehingga script
+# ini diam-diam gagal (exit 127) sejak dipasang. Pakai path absolut.
+LOGROTATE=$(command -v logrotate || echo /usr/sbin/logrotate)
+if [ ! -x "$LOGROTATE" ]; then
+  echo "ERROR: logrotate tidak ditemukan" >&2
+  exit 1
+fi
+
+"$LOGROTATE" --state "$STATE" "$CONF"

@@ -1,6 +1,26 @@
-# Runbook — Catetin Duit Telegram Agent
+# Runbook — Catetin Duit Telegram Bot
 
-Catatan operasional VM. Dibuat 26 Sep 2026 setelah insiden OOM.
+Catatan operasional. Dibuat 26 Sep 2026 setelah insiden OOM; diperbarui
+27 Sep 2026 setelah OpenClaw dihapus sepenuhnya dari VM.
+
+## Arsitektur saat ini
+
+```
+Telegram → webhook → Vercel /api/webhooks/telegram
+   ├─ /start /connect /riwayat /ringkasan /bantuan → kode biasa, tanpa LLM
+   └─ teks bebas → 1× panggilan LLM (JSON) → validasi zod → Supabase
+```
+
+**VM tidak ada dalam jalur produksi.** Tugasnya tinggal tiga cron:
+
+| Jam | Script | Tugas |
+|---|---|---|
+| 03:00 | `keepalive-supabase.sh` | cegah Supabase free-tier di-pause |
+| 04:00 | `rotate-logs.sh` | rotasi log |
+| tiap 10 mnt | `healthcheck.sh` | pantau webhook, alert ke Telegram owner |
+
+OpenClaw sudah dihapus (binary, `~/.openclaw`, unit systemd, node_modules).
+Backup ada di `~/openclaw-final-backup-20260927/`.
 
 ## Arsitektur singkat
 

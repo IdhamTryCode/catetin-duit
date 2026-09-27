@@ -16,8 +16,11 @@ import { z } from 'zod'
 const TransactionSchema = z.object({
   type: z.enum(['income', 'expense']),
   amount: z.number().positive().max(1e12),
-  category: z.string().min(1).max(100),
-  description: z.string().min(1).max(500),
+  category: z.string().min(1).transform((v) => v.slice(0, 100)),
+  // Potong, jangan tolak: LLM kadang menyalin pesan panjang apa adanya ke
+  // deskripsi. Menolaknya membuat transaksi yang sebenarnya valid gagal
+  // dengan pesan "tidak bisa mendeteksi transaksi".
+  description: z.string().min(1).transform((v) => v.slice(0, 500)),
   confidence: z.number().min(0).max(1),
   /** -1 = kemarin, -7 = minggu lalu. Dipakai kalau transaction_date kosong. */
   date_offset: z.number().int().min(-3650).max(0).optional(),
