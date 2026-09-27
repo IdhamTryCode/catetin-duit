@@ -139,8 +139,13 @@ Jalur baru: `Telegram webhook -> /api/webhooks/telegram` di Vercel.
 LLM hanya mengurai teks jadi JSON (satu panggilan, divalidasi zod); perintah
 dan penyimpanan dikerjakan kode biasa. Tidak ada shell, tidak ada agent loop.
 
-**Belum aktif sampai `setWebhook` dijalankan.** Selama belum, VM tetap
-melayani lewat long-polling seperti biasa.
+**AKTIF sejak 27 Sep 2026.** Produksi dilayani webhook Vercel; channel
+Telegram di VM sudah `enabled: false` supaya tidak hidup lagi saat gateway
+restart dan berebut update (Telegram hanya mengirim ke satu konsumen).
+
+Healthcheck kini memantau webhook — terdaftar, tanpa error, antrian tidak
+menumpuk, endpoint membalas 401 — bukan gateway OpenClaw, yang sudah tidak
+menentukan apakah pengguna terlayani.
 
 ### Urutan aktivasi
 

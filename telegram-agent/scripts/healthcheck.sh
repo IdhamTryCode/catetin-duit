@@ -4,6 +4,11 @@
 # Cek kesehatan bot Catetin Duit dan kirim peringatan ke Telegram owner
 # kalau ada yang salah.
 #
+# Sejak 27 Sep 2026 produksi dilayani webhook di Vercel, bukan gateway VM.
+# Yang dipantau karena itu: webhook terdaftar & tanpa error, endpoint hidup,
+# Telegram API menjawab, Supabase terjangkau. Kesehatan gateway OpenClaw
+# tidak lagi menentukan apakah pengguna terlayani.
+#
 # Latar: 26 Sep 2026 gateway kena OOM kill 16x dan bot diam berjam-jam
 # tanpa ada yang tahu — laporan baru datang dari pengguna. Script ini
 # menutup celah itu.
@@ -22,6 +27,7 @@ export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNT
 
 CONFIG="${OPENCLAW_CONFIG_PATH:-$HOME/.openclaw/openclaw.json}"
 OWNER_CHAT_ID="${OWNER_CHAT_ID:-914463371}"
+APP_URL="${APP_URL:-https://catetin-duit.vercel.app}"
 STATE_DIR="${HEALTHCHECK_STATE_DIR:-$HOME/openclaw-logs}"
 THROTTLE_SECONDS="${THROTTLE_SECONDS:-3600}"
 
@@ -31,25 +37,36 @@ TOKEN=$(grep -oP '"botToken":\s*"\K[^"]+' "$CONFIG" 2>/dev/null | head -1)
 
 problems=()
 
-# 1. Service systemd hidup?
-# Kalau systemctl sendiri tidak bisa dijalankan (mis. bus tidak tersedia),
-# JANGAN laporkan sebagai gateway mati -- itu masalah alat ukur, bukan bot.
-# Kesehatan sebenarnya tetap tertangkap cek 6 (Telegram API menjawab).
-state=$(systemctl --user is-active openclaw-gateway 2>/dev/null || true)
-if [ -z "$state" ]; then
-  echo "$(date -Is) WARN: systemctl --user tidak dapat dibaca; lewati cek service"
-elif [ "$state" != "active" ]; then
-  problems+=("Gateway systemd: $state")
+# 1-3. Webhook Telegram: ini yang menentukan pengguna terlayani atau tidak.
+if [ -z "${TOKEN:-}" ]; then
+  problems+=("Bot token tidak terbaca dari config")
+else
+  WH=$(curl -s -m 20 "https://api.telegram.org/bot${TOKEN}/getWebhookInfo" || true)
+
+  case "$WH" in
+    *'"url":"https://'*) : ;;
+    *) problems+=("Webhook TIDAK terdaftar — pengguna tidak terlayani") ;;
+  esac
+
+  # Telegram melaporkan error pengiriman terakhir; kalau ada, endpoint bermasalah.
+  err=$(printf '%s' "$WH" | grep -oP '"last_error_message":"\K[^"]*' || true)
+  [ -n "$err" ] && problems+=("Webhook error: ${err}")
+
+  # Antrian menumpuk = endpoint tidak menyerap update.
+  pend=$(printf '%s' "$WH" | grep -oP '"pending_update_count":\K[0-9]+' || echo 0)
+  [ "${pend:-0}" -gt 20 ] && problems+=("Webhook tertunda ${pend} update")
 fi
 
-# 2. Restart beruntun? (indikasi crash-loop)
-nrestarts=$(systemctl --user show openclaw-gateway -p NRestarts --value 2>/dev/null || echo 0)
-[ -z "$nrestarts" ] && nrestarts=0
-[ "$nrestarts" -ge 3 ] 2>/dev/null && problems+=("Gateway restart ${nrestarts}x")
-
-# 3. OOM dalam 1 jam terakhir?
-ooms=$(journalctl --user -u openclaw-gateway --since "1 hour ago" --no-pager 2>/dev/null | grep -c "oom-kill" || true)
-[ "${ooms:-0}" -gt 0 ] && problems+=("OOM kill ${ooms}x dalam 1 jam")
+# Endpoint webhook hidup? 401 = hidup & menolak request tanpa secret (benar).
+code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 \
+  -X POST "${APP_URL}/api/webhooks/telegram" \
+  -H 'Content-Type: application/json' -d '{}' 2>/dev/null || echo 000)
+case "$code" in
+  401) : ;;
+  000) problems+=("Endpoint webhook tidak terjangkau") ;;
+  404) problems+=("Endpoint webhook 404 — deploy bermasalah") ;;
+  *)   problems+=("Endpoint webhook balas HTTP ${code}") ;;
+esac
 
 # 4. RAM tersedia menipis?
 avail=$(free -m | awk '/^Mem:/ {print $7}')
@@ -58,14 +75,6 @@ avail=$(free -m | awk '/^Mem:/ {print $7}')
 # 5. Disk menipis?
 diskpct=$(df --output=pcent /home | tail -1 | tr -dc '0-9')
 [ "${diskpct:-0}" -gt 90 ] && problems+=("Disk terpakai ${diskpct}%")
-
-# 6. Bot Telegram benar-benar menjawab API?
-# Ini cek paling penting: kalau ini lolos, bot BISA melayani pengguna.
-if [ -z "${TOKEN:-}" ]; then
-  problems+=("Bot token tidak terbaca dari config")
-elif ! curl -s -m 15 "https://api.telegram.org/bot${TOKEN}/getMe" | grep -q '"ok":true'; then
-  problems+=("Telegram getMe gagal")
-fi
 
 # 7. Supabase terjangkau?
 if [ -f "$HOME/openclaw/catetin-duit-agent/.env" ]; then
