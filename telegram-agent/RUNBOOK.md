@@ -133,6 +133,71 @@ bot mati; indikator mengetik membuatnya terasa hidup. Diset eksplisit supaya
 tidak hilang saat `doctor --fix`. Catatan: `typingIntervalSeconds` hanya valid
 di `agents.defaults`, bukan per-agent — schema menolaknya.
 
+## Peralihan ke webhook (langkah 5)
+
+Jalur baru: `Telegram webhook -> /api/webhooks/telegram` di Vercel.
+LLM hanya mengurai teks jadi JSON (satu panggilan, divalidasi zod); perintah
+dan penyimpanan dikerjakan kode biasa. Tidak ada shell, tidak ada agent loop.
+
+**Belum aktif sampai `setWebhook` dijalankan.** Selama belum, VM tetap
+melayani lewat long-polling seperti biasa.
+
+### Urutan aktivasi
+
+1. Jalankan `supabase/migrations/20260926_telegram_webhook.sql` di Supabase
+   SQL Editor. Kalau index unik `profiles_telegram_chat_id_uidx` gagal,
+   berarti ada chat_id ganda — periksa dengan query di komentar file itu.
+
+2. Set environment variable di Vercel (Production):
+
+   ```
+   TELEGRAM_BOT_TOKEN=<token BotFather>
+   TELEGRAM_WEBHOOK_SECRET=<acak, mis. openssl rand -hex 32>
+   LLM_BASE_URL=https://kenari.id/v1
+   LLM_API_KEY=<kunci kenari>
+   LLM_MODEL=deepseek-v4-1-flash
+   FREE_PROMO=true
+   USER_DEFAULT_TIMEZONE=Asia/Jakarta
+   ```
+
+   `SUPABASE_SERVICE_ROLE_KEY` dan `NEXT_PUBLIC_APP_URL` sudah ada.
+
+3. Deploy, lalu matikan channel Telegram di VM supaya tidak ada dua pembaca:
+
+   ```bash
+   openclaw gateway call channels.stop --params '{"channel":"telegram"}'
+   ```
+
+4. Daftarkan webhook:
+
+   ```bash
+   curl -X POST "https://catetin-duit.vercel.app/api/webhooks/telegram/setup?secret=$CRON_SECRET"
+   curl "https://catetin-duit.vercel.app/api/webhooks/telegram/setup?secret=$CRON_SECRET"   # cek status
+   ```
+
+5. Tes dari Telegram: `/bantuan`, `/riwayat`, `beli kopi 25rb`.
+
+### Rollback
+
+```bash
+curl -X DELETE "https://catetin-duit.vercel.app/api/webhooks/telegram/setup?secret=$CRON_SECRET"
+openclaw gateway call channels.start --params '{"channel":"telegram"}'
+```
+
+Begitu webhook dihapus, long-polling OpenClaw kembali menerima update.
+Tidak ada data yang hilang; kedua jalur menulis ke tabel yang sama.
+
+### Hasil pengukuran (27 Sep 2026)
+
+| | Jalur lama | Webhook |
+|---|---|---|
+| Latensi | 10 s (median) | ~1.7 s |
+| Panggilan LLM per pesan | 2-3 | 1 |
+| Service role key di VM | ya | tidak |
+
+Parser diuji 6 kasus (termasuk `beli nasi di warung 'bu tini' 20rb` yang
+dulu merusak shell) dan handler diuji 17 assertion terhadap Supabase nyata.
+
 ## Keterbatasan yang diketahui (belum diperbaiki)
 
 1. **LLM bisa mengarang balasan.** Terbukti 26 Sep: `/bantuan` membalas

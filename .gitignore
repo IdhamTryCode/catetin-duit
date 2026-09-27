@@ -44,3 +44,4 @@ telegram-agent/.env
 telegram-agent/node_modules
 telegram-agent/**/*.log
 telegram-agent/.openclaw
+dist-test
