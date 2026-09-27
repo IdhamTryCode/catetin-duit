@@ -14,6 +14,12 @@
 
 set -uo pipefail
 
+# cron berjalan tanpa session bus, sehingga `systemctl --user` gagal dengan
+# "Failed to connect to bus: No medium found". Tanpa ini, variabel state
+# kosong dan script mengira gateway mati -> alert palsu tiap jam.
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"
+
 CONFIG="${OPENCLAW_CONFIG_PATH:-$HOME/.openclaw/openclaw.json}"
 OWNER_CHAT_ID="${OWNER_CHAT_ID:-914463371}"
 STATE_DIR="${HEALTHCHECK_STATE_DIR:-$HOME/openclaw-logs}"
@@ -26,12 +32,20 @@ TOKEN=$(grep -oP '"botToken":\s*"\K[^"]+' "$CONFIG" 2>/dev/null | head -1)
 problems=()
 
 # 1. Service systemd hidup?
+# Kalau systemctl sendiri tidak bisa dijalankan (mis. bus tidak tersedia),
+# JANGAN laporkan sebagai gateway mati -- itu masalah alat ukur, bukan bot.
+# Kesehatan sebenarnya tetap tertangkap cek 6 (Telegram API menjawab).
 state=$(systemctl --user is-active openclaw-gateway 2>/dev/null || true)
-[ "$state" = "active" ] || problems+=("Gateway systemd: $state")
+if [ -z "$state" ]; then
+  echo "$(date -Is) WARN: systemctl --user tidak dapat dibaca; lewati cek service"
+elif [ "$state" != "active" ]; then
+  problems+=("Gateway systemd: $state")
+fi
 
 # 2. Restart beruntun? (indikasi crash-loop)
 nrestarts=$(systemctl --user show openclaw-gateway -p NRestarts --value 2>/dev/null || echo 0)
-[ "${nrestarts:-0}" -ge 3 ] && problems+=("Gateway restart ${nrestarts}x")
+[ -z "$nrestarts" ] && nrestarts=0
+[ "$nrestarts" -ge 3 ] 2>/dev/null && problems+=("Gateway restart ${nrestarts}x")
 
 # 3. OOM dalam 1 jam terakhir?
 ooms=$(journalctl --user -u openclaw-gateway --since "1 hour ago" --no-pager 2>/dev/null | grep -c "oom-kill" || true)
@@ -46,10 +60,11 @@ diskpct=$(df --output=pcent /home | tail -1 | tr -dc '0-9')
 [ "${diskpct:-0}" -gt 90 ] && problems+=("Disk terpakai ${diskpct}%")
 
 # 6. Bot Telegram benar-benar menjawab API?
-if [ -n "${TOKEN:-}" ]; then
-  if ! curl -s -m 15 "https://api.telegram.org/bot${TOKEN}/getMe" | grep -q '"ok":true'; then
-    problems+=("Telegram getMe gagal")
-  fi
+# Ini cek paling penting: kalau ini lolos, bot BISA melayani pengguna.
+if [ -z "${TOKEN:-}" ]; then
+  problems+=("Bot token tidak terbaca dari config")
+elif ! curl -s -m 15 "https://api.telegram.org/bot${TOKEN}/getMe" | grep -q '"ok":true'; then
+  problems+=("Telegram getMe gagal")
 fi
 
 # 7. Supabase terjangkau?
