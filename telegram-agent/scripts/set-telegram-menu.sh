@@ -21,7 +21,9 @@ set -euo pipefail
 
 CONFIG="${OPENCLAW_CONFIG_PATH:-$HOME/.openclaw/openclaw.json}"
 
-TOKEN=$(grep -oP '"botToken":\s*"\K[^"]+' "$CONFIG" | head -1)
+ENV_FILE="${AGENT_ENV:-$HOME/openclaw/catetin-duit-agent/.env}"
+TOKEN=$(grep -oP '^TELEGRAM_BOT_TOKEN=\K.*' "$ENV_FILE" 2>/dev/null | tr -d '"\r' | head -1)
+[ -z "${TOKEN:-}" ] && TOKEN=$(grep -oP '"botToken":\s*"\K[^"]+' "$CONFIG" 2>/dev/null | head -1)
 if [ -z "${TOKEN:-}" ]; then
   echo "ERROR: botToken tidak ditemukan di $CONFIG" >&2
   exit 1

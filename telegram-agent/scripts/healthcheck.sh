@@ -33,7 +33,13 @@ THROTTLE_SECONDS="${THROTTLE_SECONDS:-3600}"
 
 mkdir -p "$STATE_DIR"
 
-TOKEN=$(grep -oP '"botToken":\s*"\K[^"]+' "$CONFIG" 2>/dev/null | head -1)
+# Token diambil dari .env agent. Sebelumnya dibaca dari openclaw.json,
+# sehingga monitoring ikut mati kalau OpenClaw dihapus -- padahal produksi
+# sudah tidak memakainya. Fallback ke openclaw.json dipertahankan untuk
+# instalasi lama.
+ENV_FILE="${AGENT_ENV:-$HOME/openclaw/catetin-duit-agent/.env}"
+TOKEN=$(grep -oP '^TELEGRAM_BOT_TOKEN=\K.*' "$ENV_FILE" 2>/dev/null | tr -d '"\r' | head -1)
+[ -z "${TOKEN:-}" ] && TOKEN=$(grep -oP '"botToken":\s*"\K[^"]+' "$CONFIG" 2>/dev/null | head -1)
 
 problems=()
 
