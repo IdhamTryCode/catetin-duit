@@ -68,13 +68,16 @@ case "$code" in
   *)   problems+=("Endpoint webhook balas HTTP ${code}") ;;
 esac
 
-# 4. RAM tersedia menipis?
+# 4. Sumber daya VM — CATATAN SAJA, bukan alert.
+# Sejak produksi pindah ke Vercel, RAM/disk VM tidak menentukan apakah
+# pengguna terlayani. RAM sempit di VM 1.9 GB itu normal dan pernah memicu
+# 9 alert yang tidak perlu. Tetap dicatat ke log untuk diagnosis.
 avail=$(free -m | awk '/^Mem:/ {print $7}')
-[ "${avail:-999}" -lt 150 ] && problems+=("RAM tersisa ${avail}MB")
-
-# 5. Disk menipis?
 diskpct=$(df --output=pcent /home | tail -1 | tr -dc '0-9')
-[ "${diskpct:-0}" -gt 90 ] && problems+=("Disk terpakai ${diskpct}%")
+[ "${avail:-999}" -lt 150 ] && echo "$(date -Is) NOTE: RAM VM tersisa ${avail}MB"
+
+# Disk penuh tetap penting: log dan state bisa berhenti ditulis.
+[ "${diskpct:-0}" -gt 90 ] && problems+=("Disk VM terpakai ${diskpct}%")
 
 # 7. Supabase terjangkau?
 if [ -f "$HOME/openclaw/catetin-duit-agent/.env" ]; then
@@ -87,9 +90,24 @@ if [ -f "$HOME/openclaw/catetin-duit-agent/.env" ]; then
   fi
 fi
 
+FAILSTAMP="$STATE_DIR/.consecutive-failures"
+
 if [ ${#problems[@]} -eq 0 ]; then
+  rm -f "$FAILSTAMP"
   echo "$(date -Is) OK"
   exit 0
+fi
+
+# Butuh DUA kegagalan berturut-turut (jarak 10 menit) sebelum memberi alert.
+# Gangguan sesaat -- deploy Vercel, jaringan tersendat, restart -- lewat
+# begitu saja tanpa mengganggu. Masalah sungguhan bertahan >10 menit.
+fails=$(cat "$FAILSTAMP" 2>/dev/null || echo 0)
+fails=$(( fails + 1 ))
+echo "$fails" > "$FAILSTAMP"
+
+if [ "$fails" -lt 2 ]; then
+  echo "$(date -Is) MASALAH (percobaan ${fails}/2, tunggu konfirmasi): ${problems[*]}"
+  exit 1
 fi
 
 # Throttle per-jenis-masalah
