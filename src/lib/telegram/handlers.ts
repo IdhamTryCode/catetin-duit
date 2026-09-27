@@ -11,7 +11,9 @@ import type { Parsed } from './parse'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://catetin-duit.vercel.app'
 const BLOCKED_STATUSES = ['trial_expired', 'cancelled']
-const FREE_PROMO = process.env.FREE_PROMO === 'true'
+// Samakan dengan konstanta aplikasi (src/lib/constants.ts): satu saklar,
+// satu nama. Kalau berbeda, promo aktif di web tapi bot tetap memblokir.
+const FREE_PROMO = process.env.NEXT_PUBLIC_FREE_PROMO === 'true'
 const TZ = process.env.USER_DEFAULT_TIMEZONE || 'Asia/Jakarta'
 
 const CODE_RE = /^[A-Z0-9]{6}$/

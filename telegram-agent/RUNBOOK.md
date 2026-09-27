@@ -156,11 +156,13 @@ melayani lewat long-polling seperti biasa.
    LLM_BASE_URL=https://kenari.id/v1
    LLM_API_KEY=<kunci kenari>
    LLM_MODEL=deepseek-v4-1-flash
-   FREE_PROMO=true
    USER_DEFAULT_TIMEZONE=Asia/Jakarta
    ```
 
-   `SUPABASE_SERVICE_ROLE_KEY` dan `NEXT_PUBLIC_APP_URL` sudah ada.
+   Sudah ada, tidak perlu ditambah: `SUPABASE_SERVICE_ROLE_KEY`,
+   `NEXT_PUBLIC_APP_URL`, `CRON_SECRET`, `NEXT_PUBLIC_FREE_PROMO`.
+   Bot memakai `NEXT_PUBLIC_FREE_PROMO` yang sama dengan web — satu saklar
+   untuk keduanya.
 
 3. Deploy, lalu matikan channel Telegram di VM supaya tidak ada dua pembaca:
 
