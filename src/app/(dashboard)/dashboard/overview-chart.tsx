@@ -1,6 +1,6 @@
 'use client'
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { Bar, BarChart, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { formatIDRCompact } from '@/lib/utils'
 
 interface ChartData {
@@ -11,18 +11,22 @@ interface ChartData {
 
 export function OverviewChart({ data }: { data: ChartData[] }) {
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <BarChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-        <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-        <YAxis tickFormatter={(v) => formatIDRCompact(Number(v))} tick={{ fontSize: 11 }} width={80} />
-        <Tooltip
-          formatter={(value) => formatIDRCompact(Number(value))}
-          contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
+    <ResponsiveContainer width="100%" height={250}>
+      <BarChart data={data} margin={{ top: 4, right: 4, left: 4, bottom: 0 }} barGap={4} barCategoryGap="28%">
+        <XAxis
+          dataKey="month"
+          tickLine={false}
+          axisLine={{ stroke: '#DCE9E1' }}
+          tick={{ fontSize: 13, fill: '#56685D' }}
+          tickMargin={10}
         />
-        <Legend />
-        <Bar dataKey="income" name="Pemasukan" fill="hsl(142, 76%, 36%)" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="expense" name="Pengeluaran" fill="hsl(0, 84%, 60%)" radius={[4, 4, 0, 0]} />
+        <Tooltip
+          cursor={{ fill: '#F4F9F6' }}
+          formatter={(value) => formatIDRCompact(Number(value))}
+          contentStyle={{ borderRadius: 12, border: '1px solid #DCE9E1', fontSize: 13 }}
+        />
+        <Bar dataKey="income" name="Pemasukan" fill="#16B06A" radius={[6, 6, 0, 0]} maxBarSize={28} />
+        <Bar dataKey="expense" name="Pengeluaran" fill="#F2A3A3" radius={[6, 6, 0, 0]} maxBarSize={28} />
       </BarChart>
     </ResponsiveContainer>
   )

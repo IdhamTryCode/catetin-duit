@@ -1,10 +1,8 @@
 import { createClient } from '@/utils/supabase/server'
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
-import { TrendingUp, TrendingDown, Wallet, MessageCircle, AlertTriangle, ArrowRight, Receipt, Bot } from 'lucide-react'
+import { id as idLocale } from 'date-fns/locale'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { BTN_PRIMARY, CARD, PageHeader, TxIcon } from '@/components/dashboard/ui'
 import { type RecentTransaction, type ChartDataPoint, getJoinedCategory } from '@/types'
 import { OverviewChart } from './overview-chart'
 import { formatIDR, formatDateShort } from '@/lib/utils'
@@ -47,7 +45,7 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-    .limit(8)
+    .limit(4)
 
   // ── 6-month chart data: single query instead of 6 separate queries ──────────
   const sixMonthsAgo = format(startOfMonth(subMonths(now, 5)), 'yyyy-MM-dd')
@@ -76,7 +74,7 @@ async function getDashboardData(userId: string): Promise<DashboardData> {
     const monthDate = subMonths(now, i)
     const key = format(monthDate, 'yyyy-MM')
     chartData.push({
-      month: format(monthDate, 'MMM'),
+      month: format(monthDate, 'MMM', { locale: idLocale }),
       income: monthlyTotals[key]?.income ?? 0,
       expense: monthlyTotals[key]?.expense ?? 0,
     })
@@ -109,232 +107,118 @@ export default async function DashboardPage() {
     ? Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
 
-  const currentMonth = format(new Date(), 'MMMM yyyy')
+  const currentMonth = format(new Date(), 'MMMM yyyy', { locale: idLocale })
+  const hasData = recentTransactions.length > 0
 
   return (
-    <div className="space-y-5 max-w-2xl mx-auto md:max-w-none animate-fade-in">
+    <div className="flex flex-col gap-6">
+      <PageHeader title="Beranda" subtitle={currentMonth} />
 
-      {/* Page title */}
-      <div className="hidden md:block">
-        <h1 className="text-xl font-bold text-foreground">Beranda</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{currentMonth}</p>
-      </div>
-
-      {/* Mobile: month label */}
-      <div className="md:hidden">
-        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-          {currentMonth}
-        </p>
-      </div>
-
-      {/* Alert banners */}
       {!profile?.telegram_chat_id && (
-        <Alert className="border-blue-400/30 bg-blue-500/8 [&>svg]:text-blue-500">
-          <MessageCircle className="h-4 w-4" />
-          <AlertTitle className="text-blue-800 font-semibold">Hubungkan Telegram</AlertTitle>
-          <AlertDescription className="flex items-center justify-between gap-2">
-            <span className="text-blue-700/75">Catat transaksi langsung dari chat</span>
-            <Button asChild size="sm" className="h-7 text-xs flex-shrink-0">
-              <Link href="/dashboard/telegram">Hubungkan</Link>
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {!FREE_PROMO && profile?.subscription_status === 'trial' && daysLeft !== null && daysLeft <= TRIAL_WARNING_THRESHOLD_DAYS && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-400/35 bg-amber-50/80 backdrop-blur-sm px-4 py-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-amber-900 leading-tight">
-                Trial berakhir dalam {daysLeft} hari
-              </p>
-              <p className="text-xs text-amber-700/70 mt-0.5">
-                Upgrade untuk akses penuh tanpa batas
-              </p>
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-[18px] bg-cd-dark px-6 py-5 text-white">
+          <div className="flex flex-col gap-1">
+            <span className="text-base font-bold">Hubungkan Telegram</span>
+            <span className="text-sm text-cd-on-dark">Catat transaksi langsung dari chat. Butuh kurang dari semenit.</span>
           </div>
-          <Button asChild size="sm" className="h-8 text-xs flex-shrink-0 bg-amber-600 hover:bg-amber-700 text-white shadow-sm">
-            <Link href="/dashboard/subscription">Upgrade</Link>
-          </Button>
+          <Link
+            href="/dashboard/telegram"
+            className="rounded-[11px] bg-cd-accent px-4 py-[11px] text-sm font-bold text-cd-dark hover:bg-cd-accent-hover"
+          >
+            Hubungkan
+          </Link>
         </div>
       )}
 
-      {/* ── Summary Cards ────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3">
+      {!FREE_PROMO && profile?.subscription_status === 'trial' && daysLeft !== null && daysLeft <= TRIAL_WARNING_THRESHOLD_DAYS && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#F2DDB0] bg-[#FFF8EB] px-6 py-4">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[15px] font-bold text-[#6B4A0E]">Trial berakhir dalam {daysLeft} hari</span>
+            <span className="text-sm text-[#6B5A36]">Upgrade ke Premium supaya pencatatan via Telegram tetap jalan.</span>
+          </div>
+          <Link href="/dashboard/subscription" className={BTN_PRIMARY}>Upgrade</Link>
+        </div>
+      )}
 
-        {/* Income */}
-        <Card className="border-emerald-400/25 bg-gradient-to-br from-emerald-500/12 via-emerald-400/6 to-card">
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-start justify-between mb-2.5">
-              <span className="text-[10px] md:text-xs font-semibold text-emerald-700 uppercase tracking-wider">
-                Pemasukan
-              </span>
-              <div className="h-6 w-6 md:h-7 md:w-7 rounded-lg bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="h-3 w-3 md:h-3.5 md:w-3.5 text-emerald-600 stroke-[2.5]" />
-              </div>
-            </div>
-            <p className="text-sm md:text-lg font-bold text-emerald-700 truncate tabular-nums leading-tight">
-              {formatIDR(income)}
-            </p>
-            <p className="text-[10px] text-emerald-600/55 mt-1 font-medium">bulan ini</p>
-          </CardContent>
-        </Card>
-
-        {/* Expense */}
-        <Card className="border-rose-400/25 bg-gradient-to-br from-rose-500/12 via-rose-400/6 to-card">
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-start justify-between mb-2.5">
-              <span className="text-[10px] md:text-xs font-semibold text-rose-700 uppercase tracking-wider">
-                Pengeluaran
-              </span>
-              <div className="h-6 w-6 md:h-7 md:w-7 rounded-lg bg-rose-500/15 flex items-center justify-center flex-shrink-0">
-                <TrendingDown className="h-3 w-3 md:h-3.5 md:w-3.5 text-rose-600 stroke-[2.5]" />
-              </div>
-            </div>
-            <p className="text-sm md:text-lg font-bold text-rose-700 truncate tabular-nums leading-tight">
-              {formatIDR(expense)}
-            </p>
-            <p className="text-[10px] text-rose-600/55 mt-1 font-medium">bulan ini</p>
-          </CardContent>
-        </Card>
-
-        {/* Net Cashflow */}
-        <Card
-          className={
-            netCashflow >= 0
-              ? 'border-primary/25 bg-gradient-to-br from-primary/12 via-primary/6 to-card'
-              : 'border-rose-400/25 bg-gradient-to-br from-rose-500/12 via-rose-400/6 to-card'
-          }
-        >
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-start justify-between mb-2.5">
-              <span
-                className={`text-[10px] md:text-xs font-semibold uppercase tracking-wider ${
-                  netCashflow >= 0 ? 'text-primary' : 'text-rose-700'
-                }`}
-              >
-                Net
-              </span>
-              <div
-                className={`h-6 w-6 md:h-7 md:w-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  netCashflow >= 0 ? 'bg-primary/15' : 'bg-rose-500/15'
-                }`}
-              >
-                <Wallet
-                  className={`h-3 w-3 md:h-3.5 md:w-3.5 stroke-[2.5] ${
-                    netCashflow >= 0 ? 'text-primary' : 'text-rose-600'
-                  }`}
-                />
-              </div>
-            </div>
-            <p
-              className={`text-sm md:text-lg font-bold truncate tabular-nums leading-tight ${
-                netCashflow >= 0 ? 'text-primary' : 'text-rose-700'
-              }`}
-            >
-              {formatIDR(netCashflow)}
-            </p>
-            <p
-              className={`text-[10px] mt-1 font-medium ${
-                netCashflow >= 0 ? 'text-primary/55' : 'text-rose-600/55'
-              }`}
-            >
-              cashflow
-            </p>
-          </CardContent>
-        </Card>
+      {/* Ringkasan bulan ini */}
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+        <StatCard label="PEMASUKAN" value={formatIDR(income)} note="bulan ini" valueClass="text-cd-primary" />
+        <StatCard label="PENGELUARAN" value={formatIDR(expense)} note="bulan ini" valueClass="text-cd-expense" />
+        <div className="flex flex-col gap-2.5 rounded-[18px] bg-cd-dark p-[22px] text-white">
+          <span className="text-xs font-bold tracking-[.07em] text-cd-on-dark-3">NET CASHFLOW</span>
+          <span className={`truncate text-[28px] font-extrabold tracking-[-.02em] tabular-nums ${netCashflow < 0 ? 'text-[#FF8A8A]' : 'text-cd-accent-text'}`}>
+            {netCashflow < 0 ? '−' : ''}{formatIDR(Math.abs(netCashflow))}
+          </span>
+          <span className="text-[13px] text-cd-on-dark-3">pemasukan − pengeluaran</span>
+        </div>
       </div>
 
-      {/* ── Chart ────────────────────────────────────────────────── */}
-      <Card>
-        <CardHeader className="pb-2 pt-4 px-4 border-b border-border/40">
-          <CardTitle className="text-sm font-semibold">Tren 6 Bulan</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 pt-3">
+      {/* Tren 6 bulan */}
+      <div className={`${CARD} flex flex-col gap-5 p-6`}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="text-base font-bold">Tren 6 Bulan</span>
+          <div className="flex gap-4 text-[13px] text-cd-muted">
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-cd-accent" />Pemasukan</span>
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-[#F2A3A3]" />Pengeluaran</span>
+          </div>
+        </div>
+        {hasData ? (
           <OverviewChart data={chartData} />
-        </CardContent>
-      </Card>
+        ) : (
+          <div className="grid h-[180px] place-items-center rounded-[14px] border border-dashed border-cd-line-strong p-4 text-center text-sm text-cd-muted-2">
+            Grafik muncul setelah transaksi pertamamu tercatat.
+          </div>
+        )}
+      </div>
 
-      {/* ── Recent Transactions ───────────────────────────────────── */}
-      <Card className="overflow-hidden">
-        <CardHeader className="px-4 py-3 border-b border-border/40 flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-sm font-semibold">Transaksi Terbaru</CardTitle>
-          <Button asChild variant="ghost" size="sm" className="h-7 text-xs gap-1 text-primary px-2 hover:bg-primary/8">
-            <Link href="/dashboard/transactions">
-              Lihat semua <ArrowRight className="h-3 w-3" />
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent className="p-0">
-          {recentTransactions.length > 0 ? (
-            <div className="divide-y divide-border/40">
-              {recentTransactions.map((tx) => {
-                const category = getJoinedCategory(tx.categories)
-                const emoji = category?.icon ?? (tx.type === 'income' ? '💰' : '💸')
-                return (
-                  <div
-                    key={tx.id}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors duration-150"
-                  >
-                    {/* Emoji icon */}
-                    <div className="h-9 w-9 rounded-xl bg-muted/60 flex items-center justify-center flex-shrink-0 text-base shadow-[0_1px_3px_rgba(0,0,0,0.06)] border border-border/40">
-                      {emoji}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate text-foreground">
-                        {tx.description ?? category?.name ?? 'Transaksi'}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {formatDateShort(tx.transaction_date, timezone)}
-                        {category?.name && (
-                          <span className="text-muted-foreground/60"> · {category.name}</span>
-                        )}
-                      </p>
-                    </div>
-
-                    {/* Amount */}
-                    <span
-                      className={`text-sm font-semibold flex-shrink-0 tabular-nums ${
-                        tx.type === 'income' ? 'text-emerald-600' : 'text-rose-500'
-                      }`}
-                    >
-                      {tx.type === 'income' ? '+' : '-'}
-                      {formatIDR(tx.amount)}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            /* Empty state */
-            <div className="flex flex-col items-center justify-center py-14 text-center px-6">
-              <div className="h-14 w-14 rounded-2xl bg-muted/60 border border-border/40 flex items-center justify-center mb-4 shadow-sm">
-                <Receipt className="h-7 w-7 text-muted-foreground/60" />
+      {/* Transaksi terbaru */}
+      <div className={`${CARD} overflow-hidden`}>
+        <div className="flex items-center justify-between px-6 py-5">
+          <span className="text-base font-bold">Transaksi Terbaru</span>
+          <Link href="/dashboard/transactions" className="text-sm font-semibold text-cd-primary hover:text-cd-primary-hover">
+            Lihat semua →
+          </Link>
+        </div>
+        {hasData ? (
+          recentTransactions.map((tx) => {
+            const category = getJoinedCategory(tx.categories)
+            const income = tx.type === 'income'
+            const catName = category?.name ?? 'Lainnya'
+            return (
+              <div key={tx.id} className="flex items-center gap-3.5 border-t border-cd-line-soft px-6 py-3.5">
+                <TxIcon label={catName} income={income} />
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="truncate text-sm font-semibold">{tx.description ?? catName}</span>
+                  <span className="text-[13px] text-cd-muted-2">
+                    {catName} · {formatDateShort(tx.transaction_date, timezone)}
+                  </span>
+                </div>
+                <span className={`whitespace-nowrap text-[15px] font-bold tabular-nums ${income ? 'text-cd-primary' : 'text-cd-expense'}`}>
+                  {income ? '+' : '−'}{formatIDR(tx.amount)}
+                </span>
               </div>
-              <p className="text-sm font-semibold text-foreground">Belum ada transaksi</p>
-              <p className="text-xs text-muted-foreground mt-1.5 max-w-[200px] leading-relaxed">
-                Mulai catat via bot Telegram atau tambah manual
-              </p>
-              <div className="flex gap-2 mt-5">
-                <Button asChild variant="outline" size="sm" className="h-8 text-xs">
-                  <Link href="/dashboard/telegram">
-                    <Bot className="h-3.5 w-3.5 mr-1.5" />
-                    Hubungkan Telegram
-                  </Link>
-                </Button>
-                <Button asChild size="sm" className="h-8 text-xs">
-                  <Link href="/dashboard/transactions/new">+ Tambah Manual</Link>
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )
+          })
+        ) : (
+          <div className="flex flex-col items-center gap-1.5 border-t border-cd-line-soft px-6 py-8 text-center">
+            <span className="text-[15px] font-bold">Belum ada transaksi</span>
+            <span className="text-sm text-cd-muted-2">
+              Coba kirim{' '}
+              <code className="rounded-md bg-cd-tint px-1.5 py-0.5 font-mono text-[13px] text-cd-primary-hover">beli kopi 25rb</code>{' '}
+              ke bot.
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function StatCard({ label, value, note, valueClass }: { label: string; value: string; note: string; valueClass: string }) {
+  return (
+    <div className={`${CARD} flex flex-col gap-2.5 p-[22px]`}>
+      <span className="text-xs font-bold tracking-[.07em] text-cd-muted-2">{label}</span>
+      <span className={`truncate text-[28px] font-extrabold tracking-[-.02em] tabular-nums ${valueClass}`}>{value}</span>
+      <span className="text-[13px] text-cd-muted-2">{note}</span>
     </div>
   )
 }
