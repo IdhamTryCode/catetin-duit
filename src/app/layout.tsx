@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/nextjs'
 import type { Metadata } from 'next'
-import { Plus_Jakarta_Sans } from 'next/font/google'
+import { JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
 
@@ -8,6 +8,12 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-sans',
   weight: ['300', '400', '500', '600', '700', '800'],
+})
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  weight: ['500', '600'],
 })
 
 export function generateMetadata(): Metadata {
@@ -25,7 +31,7 @@ export function generateMetadata(): Metadata {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={plusJakartaSans.variable}>
+    <html lang="id" className={`${plusJakartaSans.variable} ${jetBrainsMono.variable}`}>
       <body className="font-sans antialiased">
         {children}
         <Toaster richColors position="top-right" />

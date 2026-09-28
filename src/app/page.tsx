@@ -2,89 +2,41 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import {
-  MessageCircle,
-  BarChart3,
-  Zap,
-  Shield,
-  CheckCircle2,
-  ArrowRight,
-  Smartphone,
-  TrendingUp,
-  Bot,
-  Star,
-  ChevronDown,
-} from 'lucide-react'
+import { ArrowRight, Check, Download, Info, Lock } from 'lucide-react'
 import { formatIDR } from '@/lib/utils'
-import { SUBSCRIPTION_PRICE, TRIAL_DURATION_DAYS } from '@/lib/constants'
+import { BOT_USERNAME, SUBSCRIPTION_PRICE, TRIAL_DURATION_DAYS } from '@/lib/constants'
+import { HeroChat } from '@/components/landing/hero-chat'
+import { PersonaTabs } from '@/components/landing/persona-tabs'
+import { Faq } from '@/components/landing/faq'
 
-const FEATURES = [
+const NAV = [
+  ['#cara-kerja', 'Cara Kerja'],
+  ['#fitur', 'Fitur'],
+  ['#harga', 'Harga'],
+  ['#faq', 'FAQ'],
+] as const
+
+const STEPS = [
+  { n: '01', title: 'Daftar akun gratis', body: <>Pakai Google, GitHub, atau email. Kamu langsung masuk ke dashboard.</> },
+  { n: '02', title: 'Buat kode di menu Telegram', body: <>Buka menu Telegram di dashboard, lalu tekan Generate Kode.</> },
   {
-    icon: MessageCircle,
-    title: 'Catat via Chat',
-    description: 'Kirim pesan biasa ke bot Telegram. AI langsung mengerti dan mencatat transaksimu secara otomatis.',
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10',
-  },
-  {
-    icon: Bot,
-    title: 'AI yang Pintar',
-    description: 'Tulis "beli kopi 25rb" atau "gajian 5jt" — AI memahami bahasa natural Indonesia dan Inggris.',
-    color: 'text-purple-500',
-    bg: 'bg-purple-500/10',
-  },
-  {
-    icon: BarChart3,
-    title: 'Dashboard Interaktif',
-    description: 'Lihat grafik cashflow, ringkasan bulanan, dan riwayat transaksi lengkap di satu tempat.',
-    color: 'text-green-500',
-    bg: 'bg-green-500/10',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Laporan Otomatis',
-    description: 'Ringkasan pemasukan dan pengeluaran per kategori, langsung tersaji tanpa perlu input manual.',
-    color: 'text-orange-500',
-    bg: 'bg-orange-500/10',
-  },
-  {
-    icon: Shield,
-    title: 'Data Aman',
-    description: 'Data kamu dilindungi dengan enkripsi dan Row Level Security. Hanya kamu yang bisa melihat datamu.',
-    color: 'text-red-500',
-    bg: 'bg-red-500/10',
-  },
-  {
-    icon: Smartphone,
-    title: 'Tanpa Install App',
-    description: 'Cukup pakai Telegram yang sudah ada di HP kamu. Tidak perlu install aplikasi baru.',
-    color: 'text-teal-500',
-    bg: 'bg-teal-500/10',
+    n: '03',
+    title: 'Tekan Start di bot',
+    body: (
+      <>
+        Tombol <strong className="font-semibold text-cd-ink">Hubungkan otomatis di Telegram</strong> membuka bot. Tekan Start, akunmu langsung terhubung.
+      </>
+    ),
   },
 ]
 
-const HOW_IT_WORKS = [
-  {
-    step: '01',
-    title: 'Daftar & Hubungkan Telegram',
-    description: 'Buat akun gratis, lalu hubungkan akun kamu dengan bot Telegram Catetin Duit dalam hitungan detik.',
-  },
-  {
-    step: '02',
-    title: 'Chat Seperti Biasa',
-    description: 'Kirim pesan ke bot kapanpun kamu belanja, makan, atau terima uang. Tulis natural, AI yang urus sisanya.',
-  },
-  {
-    step: '03',
-    title: 'Pantau di Dashboard',
-    description: 'Buka dashboard web untuk melihat laporan keuangan, grafik, dan analisis pengeluaran kamu.',
-  },
-]
+const COMMANDS = [
+  ['/riwayat', 'Lihat transaksi terakhir'],
+  ['/ringkasan', 'Ringkasan bulan ini'],
+  ['/bantuan', 'Tampilkan panduan'],
+] as const
 
-const PRICING_FEATURES = [
+const TRIAL_FEATURES = [
   `${TRIAL_DURATION_DAYS} hari trial gratis, tanpa kartu kredit`,
   'Catat transaksi via Telegram',
   'Dashboard web interaktif',
@@ -95,8 +47,8 @@ const PRICING_FEATURES = [
 ]
 
 const PREMIUM_EXTRA = [
+  `${TRIAL_DURATION_DAYS} hari trial gratis, tanpa kartu kredit`,
   'Pencatatan tanpa batas',
-  'Semua fitur trial tetap aktif',
   'Prioritas support',
 ]
 
@@ -124,11 +76,11 @@ const TESTIMONIALS = [
 const FAQ = [
   {
     q: 'Apakah bisa cancel kapan saja?',
-    a: 'Ya, kamu bisa cancel langganan kapan saja. Data kamu tetap aman dan bisa diakses meskipun sudah cancel.',
+    a: 'Bisa. Tidak ada kontrak. Kamu bisa berhenti berlangganan kapan saja dari menu Langganan di dashboard.',
   },
   {
     q: 'Apakah data saya aman?',
-    a: 'Sangat aman. Data kamu dienkripsi dan dilindungi dengan Row Level Security di Supabase. Hanya kamu yang bisa mengakses datamu.',
+    a: 'Data transaksi disimpan terenkripsi dan hanya bisa diakses oleh akunmu. Bot hanya membaca pesan yang kamu kirim langsung kepadanya.',
   },
   {
     q: 'Metode pembayaran apa yang diterima?',
@@ -140,6 +92,19 @@ const FAQ = [
   },
 ]
 
+const H2 = 'm-0 text-[clamp(30px,3.6vw,42px)] font-extrabold leading-[1.1] tracking-[-.025em] text-balance'
+const EYEBROW = 'text-[13px] font-bold uppercase tracking-[.08em] text-cd-primary'
+const GRID = (min: number) => ({ gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${min}px), 1fr))` })
+
+function Logo({ size = 32, textClass = 'text-[17px]' }: { size?: number; textClass?: string }) {
+  return (
+    <span className="flex items-center gap-2.5 text-cd-ink">
+      <Image src="/logo.png" alt="" width={size} height={size} className="rounded-[9px]" style={{ width: size, height: size }} />
+      <span className={`font-bold tracking-[-.01em] ${textClass}`}>Catetin Duit</span>
+    </span>
+  )
+}
+
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -149,376 +114,371 @@ export default async function HomePage() {
   const priceFormatted = formatIDR(SUBSCRIPTION_PRICE)
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 glass-header">
-        <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between gap-4">
-
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <Image src="/logo.png" alt="Catetin Duit" width={32} height={32} className="rounded-lg" />
-            <span className="font-bold text-base tracking-tight">Catetin Duit</span>
+    <div className="flex min-h-screen flex-col bg-cd-bg text-cd-ink">
+      {/* Header */}
+      <header className="sticky top-0 z-20 border-b border-cd-line bg-[rgba(244,249,246,.86)] backdrop-blur-md">
+        <div className="mx-auto flex max-w-[1160px] items-center gap-6 px-4 py-3.5 sm:px-6">
+          <Link href="/" aria-label="Catetin Duit">
+            <Logo />
           </Link>
-
-          {/* Desktop nav links */}
-          <nav className="hidden md:flex items-center gap-0.5">
-            {([['#cara-kerja', 'Cara Kerja'], ['#fitur', 'Fitur'], ['#harga', 'Harga']] as const).map(([href, label]) => (
-              <a
-                key={href}
-                href={href}
-                className="px-3.5 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-primary/6 rounded-lg transition-all duration-150"
-              >
+          <nav className="ml-auto hidden gap-7 md:flex">
+            {NAV.map(([href, label]) => (
+              <a key={href} href={href} className="text-sm font-medium text-cd-ink-3 hover:text-cd-primary-hover">
                 {label}
               </a>
             ))}
           </nav>
-
-          {/* CTA buttons */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
-              <Link href="/login">Masuk</Link>
-            </Button>
-            <Button size="sm" asChild className="gap-1.5 shadow-sm" style={{ boxShadow: '0 2px 10px oklch(0.48 0.128 162 / 0.28)' }}>
-              <Link href="/register">
-                Coba Gratis
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
+          <div className="ml-auto flex items-center gap-2 md:ml-0">
+            <Link href="/login" className="hidden rounded-[10px] px-3.5 py-[9px] text-sm font-semibold text-cd-ink hover:bg-cd-tint sm:block">
+              Masuk
+            </Link>
+            <Link
+              href="/register"
+              className="flex items-center gap-1.5 rounded-[10px] bg-cd-primary px-4 py-[9px] text-sm font-semibold text-white hover:bg-cd-primary-hover"
+            >
+              Coba Gratis <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden py-24 md:py-32">
-        {/* Dual gradient orbs */}
-        <div className="absolute inset-0 -z-10 overflow-hidden" aria-hidden>
-          <div className="absolute top-0 left-1/3 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-primary/8 blur-3xl" />
-          <div className="absolute top-0 right-1/3 translate-x-1/2 w-[400px] h-[400px] rounded-full bg-blue-500/6 blur-3xl" />
-        </div>
-        <div className="mx-auto max-w-4xl px-4 text-center">
-          <Badge variant="secondary" className="mb-6 gap-1.5">
-            <Star className="h-3 w-3 fill-current" />
-            Trial {TRIAL_DURATION_DAYS} hari gratis, tanpa kartu kredit
-          </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 leading-tight">
-            Catat keuangan cukup
-            <br />
-            <span className="text-primary">kirim chat ke Telegram</span>
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-            Tidak perlu buka aplikasi atau isi form. Cukup kirim pesan biasa seperti{' '}
-            <span className="font-medium text-foreground">&quot;beli kopi 25rb&quot;</span> dan AI akan
-            langsung mencatatnya untuk kamu.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" className="gap-2 text-base px-8" asChild>
-              <Link href="/register">
-                Mulai Gratis Sekarang
-                <ArrowRight className="h-4 w-4" />
+      <section id="top" className="px-4 pb-[88px] pt-16 sm:px-6 sm:pt-[72px]">
+        <div className="mx-auto grid max-w-[1160px] items-center gap-14" style={GRID(420)}>
+          <div className="flex flex-col gap-6">
+            <div className="flex">
+              <span className="flex items-center gap-2 rounded-full border border-cd-line-strong bg-white py-1.5 pl-2 pr-3 text-[13px] font-semibold text-cd-primary-hover">
+                <span className="h-2 w-2 rounded-full bg-cd-accent" />
+                Trial {TRIAL_DURATION_DAYS} hari gratis, tanpa kartu kredit
+              </span>
+            </div>
+            <h1 className="m-0 text-[clamp(40px,5.6vw,66px)] font-extrabold leading-[1.02] tracking-[-.035em] text-balance">
+              Catat keuangan cukup <span className="text-cd-primary">kirim chat ke Telegram</span>
+            </h1>
+            <p className="m-0 max-w-[520px] text-lg leading-relaxed text-cd-muted text-pretty">
+              Tidak perlu buka aplikasi atau isi form. Cukup kirim pesan biasa seperti{' '}
+              <strong className="font-semibold text-cd-ink">&quot;beli kopi 25rb&quot;</strong> dan AI akan langsung mencatatnya untuk kamu.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/register"
+                className="flex items-center gap-2 rounded-xl bg-cd-primary px-6 py-[15px] text-base font-bold text-white shadow-[0_8px_24px_-10px_rgba(0,117,74,.6)] hover:bg-cd-primary-hover"
+              >
+                Mulai Gratis Sekarang <ArrowRight className="h-4 w-4" />
               </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="gap-2 text-base" asChild>
-              <a href="#cara-kerja">
+              <a
+                href="#cara-kerja"
+                className="rounded-xl border border-cd-line-strong bg-white px-[22px] py-[15px] text-base font-semibold text-cd-ink hover:border-cd-primary"
+              >
                 Lihat Cara Kerja
               </a>
-            </Button>
+            </div>
+            <div className="flex flex-wrap gap-[18px] text-[13px] font-medium text-cd-muted-2">
+              {['Tidak perlu kartu kredit', 'Cancel kapan saja', 'Siap dalam 1 menit'].map((t) => (
+                <span key={t} className="flex items-center gap-1">
+                  <Check className="h-3.5 w-3.5" /> {t}
+                </span>
+              ))}
+            </div>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Tidak perlu kartu kredit · Cancel kapan saja
-          </p>
+          <HeroChat />
         </div>
       </section>
 
-      {/* Chat preview */}
-      <section className="py-12 border-y border-border/50 bg-muted/30">
-        <div className="mx-auto max-w-4xl px-4">
-          <p className="text-center text-sm text-muted-foreground mb-8 font-medium uppercase tracking-wider">
-            Contoh percakapan nyata
-          </p>
-          <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            <ChatBubble
-              messages={[
-                { from: 'user', text: 'beli makan siang 35rb' },
-                { from: 'bot', text: '✅ Tercatat! Pengeluaran Rp 35.000 — Makanan & Minuman' },
-                { from: 'user', text: 'terima gaji 8jt' },
-                { from: 'bot', text: '✅ Tercatat! Pemasukan Rp 8.000.000 — Gaji' },
-              ]}
-            />
-            <ChatBubble
-              messages={[
-                { from: 'user', text: 'bayar listrik 450.000' },
-                { from: 'bot', text: '✅ Tercatat! Pengeluaran Rp 450.000 — Tagihan & Utilitas' },
-                { from: 'user', text: 'bensin motor 80rb' },
-                { from: 'bot', text: '✅ Tercatat! Pengeluaran Rp 80.000 — Transportasi' },
-              ]}
-            />
+      {/* Untuk siapa */}
+      <section className="border-y border-cd-line bg-white px-4 py-[88px] sm:px-6">
+        <div className="mx-auto flex max-w-[1160px] flex-col gap-10">
+          <div className="flex max-w-[640px] flex-col gap-3">
+            <span className={EYEBROW}>Untuk siapa</span>
+            <h2 className={H2}>Satu bot, cara catatnya sesuai keseharianmu</h2>
           </div>
+          <PersonaTabs />
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="cara-kerja" className="py-24">
-        <div className="mx-auto max-w-5xl px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Cara Kerja</h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Mulai mencatat keuangan dalam 3 langkah mudah
+      {/* Cara kerja */}
+      <section id="cara-kerja" className="scroll-mt-16 px-4 py-24 sm:px-6">
+        <div className="mx-auto flex max-w-[1160px] flex-col gap-12">
+          <div className="flex max-w-[640px] flex-col gap-3">
+            <span className={EYEBROW}>Cara kerja</span>
+            <h2 className={H2}>Terhubung dalam kurang dari semenit</h2>
+            <p className="m-0 text-[17px] leading-relaxed text-cd-muted">
+              Tanpa install aplikasi baru. Cukup akun Telegram yang sudah kamu pakai.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {HOW_IT_WORKS.map((item) => (
-              <div key={item.step} className="relative text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary font-bold text-lg mb-5">
-                  {item.step}
-                </div>
-                <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{item.description}</p>
+          <div className="grid gap-4" style={GRID(240)}>
+            {STEPS.map((s) => (
+              <div key={s.n} className="flex flex-col gap-3 rounded-[20px] border border-cd-line bg-white p-6">
+                <span className="font-mono text-[13px] text-cd-primary">{s.n}</span>
+                <h3 className="m-0 text-lg font-bold">{s.title}</h3>
+                <p className="m-0 text-[15px] leading-[1.55] text-cd-muted">{s.body}</p>
               </div>
             ))}
+            <div className="flex flex-col gap-3 rounded-[20px] bg-cd-dark p-6 text-white">
+              <span className="font-mono text-[13px] text-cd-accent-text">04</span>
+              <h3 className="m-0 text-lg font-bold">Chat, lalu pantau</h3>
+              <p className="m-0 text-[15px] leading-[1.55] text-cd-on-dark">
+                Kirim transaksi kapan saja. Laporan dan grafik muncul di dashboard web.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 rounded-[14px] bg-cd-tint px-[18px] py-3.5 text-sm leading-[1.55] text-cd-ink-2">
+            <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-cd-primary" />
+            <span>
+              Tombol tidak membuka Telegram? Kirim{' '}
+              <code className="rounded-md bg-white px-1.5 py-0.5 font-mono text-[13px]">/connect KODE</code> secara manual ke @
+              {BOT_USERNAME}. Kode berlaku 15 menit.
+            </span>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-16 bg-muted/30 border-y border-border/50">
-        <div className="mx-auto max-w-5xl px-4">
-          <p className="text-center text-sm text-muted-foreground mb-8 font-medium uppercase tracking-wider">
-            Apa kata pengguna beta
-          </p>
-          <div className="grid md:grid-cols-3 gap-6">
+      {/* Fitur */}
+      <section id="fitur" className="scroll-mt-16 border-y border-cd-line bg-white px-4 py-24 sm:px-6">
+        <div className="mx-auto flex max-w-[1160px] flex-col gap-12">
+          <div className="flex max-w-[640px] flex-col gap-3">
+            <span className={EYEBROW}>Fitur</span>
+            <h2 className={H2}>Semua yang Kamu Butuhkan</h2>
+            <p className="m-0 text-[17px] leading-relaxed text-cd-muted">
+              Fitur lengkap untuk kelola keuangan pribadi maupun usaha kecil.
+            </p>
+          </div>
+          <div className="grid gap-4" style={GRID(320)}>
+            <FeatureCard
+              title="Dashboard Interaktif"
+              body="Lihat grafik cashflow, ringkasan bulanan, dan riwayat transaksi lengkap di satu tempat."
+              visual={
+                <div className="flex h-24 items-end gap-2" aria-hidden>
+                  {[
+                    ['70%', 'bg-cd-accent'],
+                    ['30%', 'bg-[#F2A3A3]'],
+                    ['85%', 'bg-cd-accent'],
+                    ['42%', 'bg-[#F2A3A3]'],
+                    ['100%', 'bg-cd-primary'],
+                    ['36%', 'bg-[#E05555]'],
+                  ].map(([h, c], i) => (
+                    <div key={i} className={`flex-1 rounded-[6px_6px_2px_2px] ${c}`} style={{ height: h }} />
+                  ))}
+                </div>
+              }
+            />
+            <FeatureCard
+              title="AI yang Pintar"
+              body={'Tulis "beli kopi 25rb" atau "gajian 5jt". AI memahami bahasa natural Indonesia dan Inggris.'}
+              visual={
+                <div className="flex h-24 flex-col justify-center gap-2" aria-hidden>
+                  {['"gajian 5jt"', '"paid lunch 45k"'].map((t) => (
+                    <span key={t} className="self-start rounded-xl border border-cd-line bg-white px-3 py-[7px] text-sm">{t}</span>
+                  ))}
+                </div>
+              }
+            />
+            <FeatureCard
+              title="Kategorisasi Otomatis"
+              body="Setiap transaksi masuk ke kategori yang tepat. Buat kategori sendiri kalau perlu."
+              visual={
+                <div className="flex h-24 flex-wrap content-center gap-1.5" aria-hidden>
+                  {['Makanan & Minuman', 'Transportasi', 'Gaji & Upah', 'Bahan Baku', 'Penjualan Online'].map((c) => (
+                    <span
+                      key={c}
+                      className={
+                        c === 'Gaji & Upah'
+                          ? 'rounded-full bg-cd-primary px-2.5 py-1.5 text-[13px] font-semibold text-white'
+                          : 'rounded-full border border-cd-line bg-white px-2.5 py-1.5 text-[13px] font-semibold'
+                      }
+                    >
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              }
+            />
+            <FeatureCard
+              title="Laporan Langsung di Chat"
+              body="Cek riwayat dan ringkasan bulanan tanpa perlu buka dashboard."
+              visual={
+                <div className="flex h-24 flex-col justify-center gap-1.5 font-mono text-[13px]">
+                  {COMMANDS.map(([cmd, desc]) => (
+                    <span key={cmd}>
+                      <span className="text-cd-primary">{cmd}</span> <span className="text-cd-muted-2">— {desc}</span>
+                    </span>
+                  ))}
+                </div>
+              }
+            />
+            <FeatureCard
+              title="Data Aman & Terenkripsi"
+              body="Catatan keuanganmu hanya bisa diakses oleh akunmu sendiri."
+              visual={
+                <div className="flex h-24 items-center" aria-hidden>
+                  <div className="grid h-14 w-14 place-items-center rounded-2xl border border-cd-line bg-white">
+                    <Lock className="h-6 w-6 text-cd-primary" />
+                  </div>
+                </div>
+              }
+            />
+            <FeatureCard
+              title="Edit & Export"
+              body="Ubah atau hapus transaksi dari web, tambah manual, dan unduh semua data kapan saja."
+              visual={
+                <div className="flex h-24 items-center" aria-hidden>
+                  <span className="flex items-center gap-1.5 rounded-[10px] border border-cd-line bg-white px-3 py-2 text-[13px] font-semibold">
+                    <Download className="h-3.5 w-3.5" /> Export CSV
+                  </span>
+                </div>
+              }
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Testimoni */}
+      <section className="px-4 py-24 sm:px-6">
+        <div className="mx-auto flex max-w-[1160px] flex-col gap-10">
+          <span className={EYEBROW}>Apa kata pengguna beta</span>
+          <div className="grid gap-4" style={GRID(300)}>
             {TESTIMONIALS.map((t) => (
-              <Card key={t.name} className="border-border/50">
-                <CardContent className="pt-6 space-y-4">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    &ldquo;{t.quote}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                      {t.initials}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">{t.role}</p>
-                    </div>
+              <figure key={t.name} className="m-0 flex flex-col justify-between gap-7 rounded-[22px] border border-cd-line bg-white p-7">
+                <blockquote className="m-0 text-lg font-medium leading-normal tracking-[-.005em] text-pretty">
+                  &ldquo;{t.quote}&rdquo;
+                </blockquote>
+                <figcaption className="flex items-center gap-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-full bg-cd-tint text-sm font-bold text-cd-primary">{t.initials}</div>
+                  <div className="flex flex-col">
+                    <span className="text-[15px] font-bold">{t.name}</span>
+                    <span className="text-[13px] text-cd-muted-2">{t.role}</span>
                   </div>
-                </CardContent>
-              </Card>
+                </figcaption>
+              </figure>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section id="fitur" className="py-24">
-        <div className="mx-auto max-w-5xl px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Semua yang Kamu Butuhkan</h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              Fitur lengkap untuk kelola keuangan pribadi maupun usaha kecil
-            </p>
+      {/* Harga */}
+      <section id="harga" className="scroll-mt-16 border-y border-cd-line bg-white px-4 py-24 sm:px-6">
+        <div className="mx-auto flex max-w-[880px] flex-col gap-12">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <span className={EYEBROW}>Harga</span>
+            <h2 className={H2}>Harga Simpel, Tanpa Kejutan</h2>
+            <p className="m-0 text-[17px] text-cd-muted">Mulai gratis, upgrade kapan saja.</p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((f) => (
-              <Card
-                key={f.title}
-                className="border-border/50 hover:border-primary/30 hover:shadow-sm transition-all duration-200"
-              >
-                <CardContent className="pt-6">
-                  <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${f.bg} mb-4`}>
-                    <f.icon className={`h-5 w-5 ${f.color}`} />
-                  </div>
-                  <h3 className="font-semibold mb-2">{f.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{f.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section id="harga" className="py-24 bg-muted/30">
-        <div className="mx-auto max-w-4xl px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Harga Simpel, Tanpa Kejutan</h2>
-            <p className="text-muted-foreground text-lg">
-              Mulai gratis, upgrade kapan saja
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto pt-4">
-            {/* Trial */}
-            <Card className="border-border/50">
-              <CardContent className="pt-6 space-y-5">
-                <div>
-                  <p className="font-semibold text-lg">Trial</p>
-                  <p className="text-muted-foreground text-sm">Coba semua fitur gratis</p>
-                </div>
-                <div>
-                  <span className="text-4xl font-bold">Gratis</span>
-                  <span className="text-muted-foreground ml-2">/ {TRIAL_DURATION_DAYS} hari</span>
-                </div>
-                <ul className="space-y-2">
-                  {PRICING_FEATURES.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Button variant="outline" className="w-full" asChild>
-                  <Link href="/register">Mulai Trial Gratis</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Premium */}
-            <Card className="border-primary relative animate-pulse-ring overflow-visible">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge className="bg-primary text-primary-foreground px-3">
-                  <Zap className="h-3 w-3 mr-1" />
-                  Paling Populer
-                </Badge>
+          <div className="grid items-stretch gap-5" style={GRID(320)}>
+            <div className="flex flex-col gap-6 rounded-3xl border border-cd-line bg-cd-bg p-8">
+              <div className="flex flex-col gap-1">
+                <span className="text-lg font-bold">Trial</span>
+                <span className="text-sm text-cd-muted-2">Coba semua fitur gratis</span>
               </div>
-              <CardContent className="pt-6 space-y-5">
-                <div>
-                  <p className="font-semibold text-lg">Premium</p>
-                  <p className="text-muted-foreground text-sm">Akses penuh tanpa batas</p>
-                </div>
-                <div>
-                  <span className="text-4xl font-bold">{priceFormatted}</span>
-                  <span className="text-muted-foreground ml-2">/ bulan</span>
-                </div>
-                <ul className="space-y-2">
-                  {[...PRICING_FEATURES, ...PREMIUM_EXTRA].map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <div className="flex items-baseline gap-2">
+                <span className="text-[44px] font-extrabold tracking-[-.03em]">Gratis</span>
+                <span className="text-[15px] text-cd-muted-2">/ {TRIAL_DURATION_DAYS} hari</span>
+              </div>
+              <ul className="m-0 flex flex-1 list-none flex-col gap-3 p-0 text-[15px]">
+                {TRIAL_FEATURES.map((f) => (
+                  <li key={f} className="flex gap-2.5">
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-cd-success" strokeWidth={3} />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/register"
+                className="rounded-xl border border-cd-line-strong bg-white p-3.5 text-center text-[15px] font-bold text-cd-ink hover:border-cd-primary"
+              >
+                Mulai Trial Gratis
+              </Link>
+            </div>
+
+            <div className="relative flex flex-col gap-6 rounded-3xl bg-cd-dark p-8 text-white shadow-[0_30px_60px_-30px_rgba(6,20,13,.6)]">
+              <span className="absolute right-7 top-7 rounded-full bg-cd-accent px-2.5 py-[5px] text-xs font-bold text-cd-dark">
+                Paling Populer
+              </span>
+              <div className="flex flex-col gap-1">
+                <span className="text-lg font-bold">Premium</span>
+                <span className="text-sm text-cd-on-dark-2">Akses penuh tanpa batas</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-[44px] font-extrabold tracking-[-.03em]">{priceFormatted}</span>
+                <span className="text-[15px] text-cd-on-dark-2">/ bulan</span>
+              </div>
+              <div className="flex flex-1 flex-col gap-3">
+                <span className="text-sm text-cd-on-dark-2">Semua fitur Trial tetap aktif, ditambah:</span>
+                <ul className="m-0 flex list-none flex-col gap-3 p-0 text-[15px]">
+                  {PREMIUM_EXTRA.map((f) => (
+                    <li key={f} className="flex gap-2.5">
+                      <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-cd-accent-text" strokeWidth={3} />
                       {f}
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full gap-2" asChild>
-                  <Link href="/register">
-                    Mulai Sekarang
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+              </div>
+              <Link
+                href="/register"
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-cd-accent p-3.5 text-[15px] font-bold text-cd-dark hover:bg-cd-accent-hover"
+              >
+                Mulai Sekarang <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="py-20">
-        <div className="mx-auto max-w-2xl px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3">Pertanyaan Umum</h2>
-            <p className="text-muted-foreground">Ada pertanyaan? Kami siap bantu.</p>
+      <section id="faq" className="scroll-mt-16 px-4 py-24 sm:px-6">
+        <div className="mx-auto flex max-w-[760px] flex-col gap-8">
+          <div className="flex flex-col gap-3">
+            <span className={EYEBROW}>FAQ</span>
+            <h2 className={H2}>Pertanyaan Umum</h2>
           </div>
-          <div className="space-y-4">
-            {FAQ.map((item) => (
-              <details key={item.q} className="group border border-border/60 rounded-xl overflow-hidden">
-                <summary className="flex items-center justify-between px-5 py-4 cursor-pointer font-medium text-sm list-none hover:bg-muted/40 transition-colors">
-                  {item.q}
-                  <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="px-5 pb-4 pt-1 text-sm text-muted-foreground leading-relaxed">
-                  {item.a}
-                </div>
-              </details>
-            ))}
-          </div>
+          <Faq items={FAQ} />
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-24 bg-primary text-primary-foreground">
-        <div className="mx-auto max-w-3xl px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+      <section className="px-4 pb-24 sm:px-6">
+        <div className="mx-auto flex max-w-[1160px] flex-col items-center gap-5 rounded-[32px] bg-cd-dark px-8 py-[72px] text-center text-white">
+          <h2 className="m-0 text-[clamp(30px,4vw,48px)] font-extrabold leading-[1.08] tracking-[-.03em] text-balance">
             Siap catat keuangan lebih mudah?
           </h2>
-          <p className="text-primary-foreground/80 text-lg mb-8">
+          <p className="m-0 text-[17px] text-cd-on-dark">
             Bergabung dan coba gratis selama {TRIAL_DURATION_DAYS} hari. Tidak perlu kartu kredit.
           </p>
-          <Button size="lg" variant="secondary" className="gap-2 text-base px-8" asChild>
-            <Link href="/register">
-              Daftar Gratis Sekarang
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
+          <Link
+            href="/register"
+            className="mt-2 flex items-center gap-1.5 rounded-xl bg-cd-accent px-[26px] py-[15px] text-base font-bold text-cd-dark hover:bg-cd-accent-hover"
+          >
+            Daftar Gratis Sekarang <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/40 bg-muted/25">
-        {/* Main content */}
-        <div className="mx-auto max-w-6xl px-4 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
-
-            {/* Brand */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2.5">
-                <Image src="/logo.png" alt="Catetin Duit" width={32} height={32} className="rounded-lg" />
-                <span className="font-bold text-base tracking-tight">Catetin Duit</span>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed max-w-[230px]">
+      <footer className="mt-auto border-t border-cd-line px-4 pb-8 pt-12 sm:px-6">
+        <div className="mx-auto flex max-w-[1160px] flex-col gap-10">
+          <div className="flex flex-wrap justify-between gap-12">
+            <div className="flex max-w-[320px] flex-col gap-3.5">
+              <Logo size={30} textClass="text-base" />
+              <p className="m-0 text-sm leading-relaxed text-cd-muted-2">
                 Asisten keuangan AI via Telegram. Catat, pantau, dan analisa keuanganmu dengan mudah.
               </p>
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span className="text-xs text-muted-foreground">Layanan aktif 24/7</span>
-              </div>
             </div>
-
-            {/* Links */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <p className="text-[11px] font-semibold text-foreground uppercase tracking-widest">Produk</p>
-                <ul className="space-y-2.5">
-                  <li><a href="#cara-kerja" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150">Cara Kerja</a></li>
-                  <li><a href="#fitur" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150">Fitur</a></li>
-                  <li><a href="#harga" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150">Harga</a></li>
-                </ul>
+            <div className="flex flex-wrap gap-16">
+              <div className="flex flex-col gap-3 text-sm">
+                <span className="text-xs font-bold tracking-[.08em] text-cd-ink">PRODUK</span>
+                <a href="#cara-kerja" className="text-cd-muted-2 hover:text-cd-primary">Cara Kerja</a>
+                <a href="#fitur" className="text-cd-muted-2 hover:text-cd-primary">Fitur</a>
+                <a href="#harga" className="text-cd-muted-2 hover:text-cd-primary">Harga</a>
               </div>
-              <div className="space-y-3">
-                <p className="text-[11px] font-semibold text-foreground uppercase tracking-widest">Akun</p>
-                <ul className="space-y-2.5">
-                  <li><Link href="/login" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150">Masuk</Link></li>
-                  <li><Link href="/register" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-150">Daftar Gratis</Link></li>
-                </ul>
-              </div>
-            </div>
-
-            {/* CTA mini card */}
-            <div>
-              <div className="rounded-xl border border-primary/20 bg-primary/6 p-5 space-y-3">
-                <p className="text-sm font-semibold text-foreground">Mulai gratis sekarang</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  7 hari trial penuh. Tidak perlu kartu kredit. Cancel kapan saja.
-                </p>
-                <Button size="sm" className="w-full gap-1.5" asChild>
-                  <Link href="/register">
-                    Coba Gratis <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </Button>
+              <div className="flex flex-col gap-3 text-sm">
+                <span className="text-xs font-bold tracking-[.08em] text-cd-ink">AKUN</span>
+                <Link href="/login" className="text-cd-muted-2 hover:text-cd-primary">Masuk</Link>
+                <Link href="/register" className="text-cd-muted-2 hover:text-cd-primary">Daftar Gratis</Link>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="border-t border-border/40">
-          <div className="mx-auto max-w-6xl px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} Catetin Duit. Dibuat untuk UMKM Indonesia.
-            </span>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Shield className="h-3 w-3 text-primary/70" />
-              <span>Data terenkripsi & aman</span>
-            </div>
+          <div className="flex flex-wrap justify-between gap-3 border-t border-cd-line pt-6 text-[13px] text-cd-muted-2">
+            <span>© {new Date().getFullYear()} Catetin Duit. Dibuat untuk UMKM Indonesia.</span>
+            <span>Data terenkripsi &amp; aman</span>
           </div>
         </div>
       </footer>
@@ -526,33 +486,14 @@ export default async function HomePage() {
   )
 }
 
-// --- Sub-components ---
-
-interface ChatMessage {
-  from: 'user' | 'bot'
-  text: string
-}
-
-function ChatBubble({ messages }: { messages: ChatMessage[] }) {
+function FeatureCard({ title, body, visual }: { title: string; body: string; visual: React.ReactNode }) {
   return (
-    <div className="bg-background rounded-2xl border border-border/50 p-4 space-y-3 shadow-sm">
-      {messages.map((msg, i) => (
-        <div
-          key={i}
-          className={`flex animate-fade-in-up ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}
-          style={{ animationDelay: `${i * 80}ms` }}
-        >
-          <div
-            className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
-              msg.from === 'user'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-foreground'
-            }`}
-          >
-            {msg.text}
-          </div>
-        </div>
-      ))}
+    <div className="flex flex-col gap-5 rounded-[22px] border border-cd-line bg-cd-bg p-7">
+      {visual}
+      <div className="flex flex-col gap-1.5">
+        <h3 className="m-0 text-lg font-bold">{title}</h3>
+        <p className="m-0 text-[15px] leading-[1.55] text-cd-muted">{body}</p>
+      </div>
     </div>
   )
 }
