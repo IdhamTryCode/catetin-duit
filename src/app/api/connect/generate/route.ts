@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthFromRequest } from '@/utils/supabase/server'
+import { CONNECT_CODE_MAX_PER_HOUR, CONNECT_CODE_TTL_MINUTES } from '@/lib/constants'
 
 function generateCode(length = 6): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Rate limiting: max 3x per hour
+  // Rate limiting: max CONNECT_CODE_MAX_PER_HOUR per hour
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
   const { count } = await supabase
     .from('connect_codes')
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     .eq('user_id', user.id)
     .gte('created_at', oneHourAgo)
 
-  if ((count ?? 0) >= 3) {
+  if ((count ?? 0) >= CONNECT_CODE_MAX_PER_HOUR) {
     return NextResponse.json({ error: 'Rate limit exceeded. Coba lagi dalam 1 jam.' }, { status: 429 })
   }
 
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
 
   // Generate new code
   const code = generateCode()
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
+  const expiresAt = new Date(Date.now() + CONNECT_CODE_TTL_MINUTES * 60 * 1000).toISOString()
 
   const { error } = await supabase
     .from('connect_codes')

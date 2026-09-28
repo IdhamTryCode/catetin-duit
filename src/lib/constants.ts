@@ -93,6 +93,18 @@ export const PAYMENT_EXPIRY_MINUTES = 1440
 /** Telegram bot username (without @) */
 export const BOT_USERNAME = 'CatetinDuitDe_bot'
 
+/** Masa berlaku kode /connect (menit) — dipakai /api/connect/generate */
+export const CONNECT_CODE_TTL_MINUTES = 15
+
+/** Maksimal kode /connect yang boleh dibuat per user dalam 1 jam */
+export const CONNECT_CODE_MAX_PER_HOUR = 3
+
+/**
+ * Kode terkunci setelah sekian percobaan gagal. Harus sama dengan batas di
+ * handleConnect (src/lib/telegram/handlers.ts); hanya dipakai untuk tampilan.
+ */
+export const CONNECT_CODE_MAX_ATTEMPTS = 5
+
 // ─── Timezones ────────────────────────────────────────────────────────────────
 
 /** Supported Indonesian timezones with display labels */
