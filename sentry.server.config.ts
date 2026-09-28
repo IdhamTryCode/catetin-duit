@@ -8,12 +8,12 @@ Sentry.init({
   dsn: "https://c505d587b45f3357a99465e561267d22@o4511094485745664.ingest.de.sentry.io/4511094486204496",
 
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
+  tracesSampleRate: 0.1,
 
   // Enable logs to be sent to Sentry
   enableLogs: true,
 
-  // Enable sending user PII (Personally Identifiable Information)
+  // Jangan kirim PII (IP, cookie, header) — data keuangan user tidak ikut ke Sentry
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
+  sendDefaultPii: false,
 });

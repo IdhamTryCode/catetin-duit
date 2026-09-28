@@ -27,7 +27,7 @@ export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNT
 
 CONFIG="${OPENCLAW_CONFIG_PATH:-$HOME/.openclaw/openclaw.json}"
 OWNER_CHAT_ID="${OWNER_CHAT_ID:-914463371}"
-APP_URL="${APP_URL:-https://catetin-duit.vercel.app}"
+APP_URL="${APP_URL:-https://www.catetinduit.de}"
 STATE_DIR="${HEALTHCHECK_STATE_DIR:-$HOME/openclaw-logs}"
 THROTTLE_SECONDS="${THROTTLE_SECONDS:-3600}"
 
