@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { BOT_USERNAME, CONNECT_CODE_MAX_ATTEMPTS, CONNECT_CODE_MAX_PER_HOUR } from '@/lib/constants'
+import { PageHeader } from '@/components/dashboard/ui'
 import { TelegramConnect, type ConnectState } from './telegram-connect'
 
 const EXAMPLES = [
@@ -60,10 +61,7 @@ export default async function TelegramPage() {
 
   return (
     <div className="flex max-w-[760px] flex-col gap-6 text-cd-ink">
-      <div className="flex flex-col gap-1.5">
-        <h1 className="m-0 text-[28px] font-extrabold tracking-[-.02em]">Hubungkan Telegram</h1>
-        <p className="m-0 text-[15px] text-cd-muted-2">Catat transaksi langsung dari chat Telegram</p>
-      </div>
+      <PageHeader title="Hubungkan Telegram" subtitle="Catat transaksi langsung dari chat Telegram" />
 
       {connect ? (
         <TelegramConnect userId={user!.id} initial={connect} />
