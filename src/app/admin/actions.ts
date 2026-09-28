@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { type Plan, PLANS } from '@/lib/constants'
+import { addDays } from 'date-fns'
+import { SUBSCRIPTION_DURATION_DAYS } from '@/lib/constants'
 
 /** Verify the calling user is an admin before performing any mutation */
 async function requireAdminUser() {
@@ -20,7 +21,14 @@ async function requireAdminUser() {
   if (profile?.role !== 'admin') throw new Error('Forbidden')
 }
 
-export async function adminUpdateUserPlan(formData: FormData) {
+const ADMIN_STATUSES = ['trial', 'premium', 'trial_expired'] as const
+
+/**
+ * Ubah status langganan user. Memilih 'premium' = aktivasi manual setelah
+ * pembayaran via WhatsApp: diperpanjang SUBSCRIPTION_DURATION_DAYS dari
+ * tanggal berakhir yang masih berjalan (atau dari sekarang).
+ */
+export async function adminUpdateUserStatus(formData: FormData) {
   try {
     await requireAdminUser()
   } catch (e: unknown) {
@@ -28,22 +36,33 @@ export async function adminUpdateUserPlan(formData: FormData) {
   }
 
   const userId = formData.get('user_id') as string
-  const plan   = formData.get('plan') as Plan
+  const status = formData.get('status') as (typeof ADMIN_STATUSES)[number]
 
   if (!userId) return { error: 'user_id diperlukan' }
-  if (!PLANS.includes(plan)) return { error: 'Plan tidak valid' }
+  if (!ADMIN_STATUSES.includes(status)) return { error: 'Status tidak valid' }
 
   const admin = createAdminClient()
-  const { error } = await admin
-    .from('profiles')
-    .update({ plan })
-    .eq('id', userId)
+  const now = new Date()
+  const update: Record<string, string> = { subscription_status: status, updated_at: now.toISOString() }
 
+  if (status === 'premium') {
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('subscription_status, subscription_ends_at')
+      .eq('id', userId)
+      .single()
+    const currentEnd = profile?.subscription_ends_at ? new Date(profile.subscription_ends_at) : null
+    const base = currentEnd && currentEnd > now ? currentEnd : now
+    update.subscription_ends_at = addDays(base, SUBSCRIPTION_DURATION_DAYS).toISOString()
+    if (profile?.subscription_status !== 'premium') update.subscription_started_at = now.toISOString()
+  }
+
+  const { error } = await admin.from('profiles').update(update).eq('id', userId)
   if (error) return { error: error.message }
 
   revalidatePath('/admin/users')
   revalidatePath('/admin')
-  return { success: true }
+  return { success: true, subscription_ends_at: update.subscription_ends_at ?? null }
 }
 
 export async function adminUpdateUserRole(formData: FormData) {

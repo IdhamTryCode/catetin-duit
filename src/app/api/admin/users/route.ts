@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const admin = createAdminClient()
   let query = admin
     .from('profiles')
-    .select('id, email, full_name, plan, role, subscription_status, telegram_chat_id, created_at', { count: 'exact' })
+    .select('id, email, full_name, role, subscription_status, subscription_ends_at, telegram_chat_id, created_at', { count: 'exact' })
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 

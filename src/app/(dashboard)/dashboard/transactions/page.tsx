@@ -18,13 +18,12 @@ export default async function TransactionsPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('timezone, plan')
+    .select('timezone, subscription_status')
     .eq('id', user!.id)
     .single()
 
   const timezone   = profile?.timezone ?? 'Asia/Jakarta'
-  const plan       = resolvePlan(profile?.plan)
-  const canExport  = plan === 'starter' || plan === 'premium'
+  const canExport  = resolvePlan(profile?.subscription_status) === 'premium'
   const page       = parsePageParam(searchParams?.page)
   const pageSize   = PAGE_SIZE
   const typeFilter = searchParams?.type
@@ -54,7 +53,7 @@ export default async function TransactionsPage({
           <p className="text-sm text-muted-foreground">Riwayat dan kelola semua transaksi</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Export CSV — hanya untuk Starter & Premium */}
+          {/* Export CSV — hanya untuk akses penuh (trial/premium) */}
           {canExport ? (
             <Button asChild variant="outline" size="sm" className="hidden sm:flex gap-1.5">
               <a href="/api/export/csv" download>

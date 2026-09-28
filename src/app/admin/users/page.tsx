@@ -13,16 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { adminUpdateUserPlan, adminUpdateUserRole } from '../actions'
-import { PLAN_NAMES, type Plan } from '@/lib/constants'
+import { adminUpdateUserStatus, adminUpdateUserRole } from '../actions'
+import { STATUS_NAMES, SUBSCRIPTION_DURATION_DAYS } from '@/lib/constants'
 
 interface UserRow {
   id: string
   email: string
   full_name: string | null
-  plan: Plan
   role: 'user' | 'admin'
   subscription_status: string
+  subscription_ends_at: string | null
   created_at: string
   telegram_chat_id: number | null
 }
@@ -32,30 +32,31 @@ interface ApiResponse {
   total: number
 }
 
-function PlanSelect({ user, onChanged }: { user: UserRow; onChanged: () => void }) {
+function StatusSelect({ user, onChanged }: { user: UserRow; onChanged: () => void }) {
   const [isPending, startTransition] = useTransition()
 
-  function handleChange(plan: string | null) {
-    if (!plan) return
+  function handleChange(status: string | null) {
+    if (!status || (status === user.subscription_status && status !== 'premium')) return
+    if (status === 'premium' && !confirm(`Aktifkan/perpanjang Premium ${user.email} selama ${SUBSCRIPTION_DURATION_DAYS} hari?`)) return
     startTransition(async () => {
       const fd = new FormData()
       fd.append('user_id', user.id)
-      fd.append('plan', plan)
-      const result = await adminUpdateUserPlan(fd)
+      fd.append('status', status)
+      const result = await adminUpdateUserStatus(fd)
       if (result?.error) toast.error(result.error)
-      else { toast.success(`Plan ${user.email} diubah ke ${PLAN_NAMES[plan as Plan]}`); onChanged() }
+      else { toast.success(`Status ${user.email} diubah ke ${STATUS_NAMES[status] ?? status}`); onChanged() }
     })
   }
 
   return (
-    <Select value={user.plan} onValueChange={handleChange} disabled={isPending}>
-      <SelectTrigger className="h-7 w-28 text-xs">
+    <Select value={user.subscription_status} onValueChange={handleChange} disabled={isPending}>
+      <SelectTrigger className="h-7 w-36 text-xs">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="free">Free</SelectItem>
-        <SelectItem value="starter">Starter</SelectItem>
-        <SelectItem value="premium">Premium</SelectItem>
+        <SelectItem value="trial">Trial</SelectItem>
+        <SelectItem value="premium">Premium (+{SUBSCRIPTION_DURATION_DAYS} hari)</SelectItem>
+        <SelectItem value="trial_expired">Trial berakhir</SelectItem>
       </SelectContent>
     </Select>
   )
@@ -152,7 +153,7 @@ export default function AdminUsersPage() {
                   <th className="text-left px-4 py-3 font-medium">Status</th>
                   <th className="text-left px-4 py-3 font-medium">Telegram</th>
                   <th className="text-left px-4 py-3 font-medium">Bergabung</th>
-                  <th className="text-left px-4 py-3 font-medium">Plan</th>
+                  <th className="text-left px-4 py-3 font-medium">Ubah status</th>
                   <th className="text-left px-4 py-3 font-medium">Role</th>
                 </tr>
               </thead>
@@ -175,8 +176,13 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusColor[u.subscription_status] ?? ''}`}>
-                        {u.subscription_status}
+                        {STATUS_NAMES[u.subscription_status] ?? u.subscription_status}
                       </span>
+                      {u.subscription_status === 'premium' && u.subscription_ends_at && (
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">
+                          s/d {new Date(u.subscription_ends_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={u.telegram_chat_id ? 'default' : 'outline'} className="text-[10px]">
@@ -187,7 +193,7 @@ export default function AdminUsersPage() {
                       {new Date(u.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="px-4 py-3">
-                      <PlanSelect user={u} onChanged={load} />
+                      <StatusSelect user={u} onChanged={load} />
                     </td>
                     <td className="px-4 py-3">
                       <RoleToggle user={u} onChanged={load} />
@@ -218,13 +224,13 @@ export default function AdminUsersPage() {
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusColor[u.subscription_status] ?? ''}`}>
-                  {u.subscription_status}
+                  {STATUS_NAMES[u.subscription_status] ?? u.subscription_status}
                 </span>
                 <Badge variant={u.telegram_chat_id ? 'default' : 'outline'} className="text-[10px]">
                   {u.telegram_chat_id ? 'Telegram ✓' : 'Telegram —'}
                 </Badge>
               </div>
-              <PlanSelect user={u} onChanged={load} />
+              <StatusSelect user={u} onChanged={load} />
             </CardContent>
           </Card>
         ))}

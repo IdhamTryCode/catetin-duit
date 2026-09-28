@@ -216,23 +216,13 @@ export default function CategoriesPage() {
       {isFreePlan && (
         <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 text-center space-y-2">
           <Lock className="h-6 w-6 text-primary/60 mx-auto" />
-          <p className="text-sm font-medium">Kategori kustom tidak tersedia di plan Free</p>
+          <p className="text-sm font-medium">Trial kamu sudah berakhir</p>
           <p className="text-xs text-muted-foreground">
-            Upgrade ke Starter atau Premium untuk membuat kategori sendiri
+            Upgrade ke Premium untuk membuat kategori sendiri
           </p>
           <Button asChild size="sm" className="mt-1">
-            <Link href="/dashboard/subscription">Lihat Plan</Link>
+            <Link href="/dashboard/subscription">Lihat Langganan</Link>
           </Button>
-        </div>
-      )}
-
-      {/* Starter limit indicator */}
-      {plan === 'starter' && limit !== Infinity && (
-        <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-          <span>Kategori kustom</span>
-          <span className={userCategories.length >= limit ? 'text-destructive font-medium' : ''}>
-            {userCategories.length}/{limit} digunakan
-          </span>
         </div>
       )}
 

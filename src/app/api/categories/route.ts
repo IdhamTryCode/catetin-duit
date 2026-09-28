@@ -8,11 +8,11 @@ export async function GET(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('plan')
+    .select('subscription_status')
     .eq('id', user.id)
     .single()
 
-  const plan = resolvePlan(profile?.plan)
+  const plan = resolvePlan(profile?.subscription_status)
 
   // Fetch user's custom categories
   const { data: userCategories } = await supabase

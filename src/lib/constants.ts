@@ -4,28 +4,33 @@
  */
 
 // ─── Plans & Pricing ──────────────────────────────────────────────────────────
+// Model harga: Trial 7 hari (akses penuh) → Premium Rp 14.999/bulan.
+// Sumber kebenaran akses adalah `profiles.subscription_status` (dipakai juga
+// oleh bot, cron trial, dan webhook Duitku). Kolom `profiles.plan` lama tidak
+// dipakai lagi. `Plan` di sini adalah tier akses efektif hasil resolvePlan().
 
-/** Valid plan identifiers */
-export const PLANS = ['free', 'starter', 'premium'] as const
+/** Tier akses efektif: 'premium' = penuh (trial/premium aktif), 'free' = terbatas. */
+export const PLANS = ['free', 'premium'] as const
 export type Plan = (typeof PLANS)[number]
 
-/** Monthly price per plan in IDR (free = 0) */
+/** Harga bulanan per tier dalam IDR */
 export const PLAN_PRICES: Record<Plan, number> = {
   free:    0,
-  starter: 14_999,
-  premium: 39_999,
+  premium: 14_999,
 }
 
-/** Per-plan feature limits. Use Infinity for unlimited. */
+/** Batas fitur per tier. Infinity = tanpa batas. */
 export const PLAN_LIMITS: Record<Plan, {
   dailyTransactions: number
   historyDays: number
   customCategories: number
 }> = {
   free:    { dailyTransactions: 5,        historyDays: 30,       customCategories: 0        },
-  starter: { dailyTransactions: 20,       historyDays: 180,      customCategories: 5        },
   premium: { dailyTransactions: Infinity, historyDays: Infinity, customCategories: Infinity },
 }
+
+/** Status langganan yang mendapat akses penuh. */
+export const FULL_ACCESS_STATUSES = ['trial', 'premium', 'grace_period'] as const
 
 // ─── Promo: "semua gratis" (sementara) ────────────────────────────────────────
 // Saklar promosi. Saat ON, SEMUA user diperlakukan sebagai PROMO_PLAN tanpa
@@ -37,28 +42,35 @@ export const FREE_PROMO = process.env.NEXT_PUBLIC_FREE_PROMO === 'true'
 /** Tier yang diberikan ke semua user selama promo aktif. */
 export const PROMO_PLAN: Plan = 'premium'
 
-/** Resolusi plan efektif: pakai PROMO_PLAN saat promo, selain itu plan asli user. */
-export function resolvePlan(rawPlan: string | null | undefined): Plan {
+/** Tier akses efektif dari subscription_status (promo → PROMO_PLAN). */
+export function resolvePlan(status: string | null | undefined): Plan {
   if (FREE_PROMO) return PROMO_PLAN
-  return (rawPlan ?? 'free') as Plan
+  return (FULL_ACCESS_STATUSES as readonly string[]).includes(status ?? '') ? 'premium' : 'free'
 }
 
-/** Display config for each plan — used in header badge & subscription page */
-export const PLAN_BADGE: Record<Plan, {
+/** Label badge status langganan (header & halaman Langganan). */
+export function statusBadge(status: string | null | undefined): {
   label: string
   variant: 'default' | 'secondary' | 'destructive' | 'outline'
   icon: boolean
-}> = {
-  free:    { label: 'Free',        variant: 'secondary', icon: false },
-  starter: { label: '✦ Starter',   variant: 'outline',   icon: false },
-  premium: { label: '✦ Premium',   variant: 'default',   icon: true  },
+} {
+  if (FREE_PROMO) return { label: '✦ Premium', variant: 'default', icon: true }
+  switch (status) {
+    case 'premium':      return { label: '✦ Premium',      variant: 'default',     icon: true  }
+    case 'grace_period': return { label: 'Masa tenggang',  variant: 'outline',     icon: false }
+    case 'trial':        return { label: 'Trial',          variant: 'secondary',   icon: false }
+    case 'cancelled':    return { label: 'Nonaktif',       variant: 'destructive', icon: false }
+    default:             return { label: 'Trial berakhir', variant: 'destructive', icon: false }
+  }
 }
 
-/** Human-readable plan names */
-export const PLAN_NAMES: Record<Plan, string> = {
-  free:    'Free',
-  starter: 'Starter',
-  premium: 'Premium',
+/** Nama status langganan untuk admin. */
+export const STATUS_NAMES: Record<string, string> = {
+  trial:         'Trial',
+  premium:       'Premium',
+  trial_expired: 'Trial berakhir',
+  grace_period:  'Masa tenggang',
+  cancelled:     'Nonaktif',
 }
 
 // ─── Subscription lifecycle ───────────────────────────────────────────────────
@@ -123,6 +135,5 @@ export type ValidTimezone = (typeof VALID_TIMEZONES)[number]
 /** Fallback timezone when none is set */
 export const DEFAULT_TIMEZONE: ValidTimezone = 'Asia/Jakarta'
 
-// ─── Legacy: kept for backward-compat during transition ───────────────────────
-/** @deprecated Use PLAN_BADGE keyed by profile.plan instead */
-export const SUBSCRIPTION_PRICE = 14_999
+/** Harga Premium per bulan (dipakai pembayaran & landing) */
+export const SUBSCRIPTION_PRICE = PLAN_PRICES.premium

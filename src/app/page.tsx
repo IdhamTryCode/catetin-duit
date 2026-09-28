@@ -8,6 +8,7 @@ import { BOT_USERNAME, SUBSCRIPTION_PRICE, TRIAL_DURATION_DAYS } from '@/lib/con
 import { HeroChat } from '@/components/landing/hero-chat'
 import { PersonaTabs } from '@/components/landing/persona-tabs'
 import { Faq } from '@/components/landing/faq'
+import { PREMIUM_EXTRA, TRIAL_FEATURES } from '@/lib/pricing'
 
 const NAV = [
   ['#cara-kerja', 'Cara Kerja'],
@@ -35,22 +36,6 @@ const COMMANDS = [
   ['/ringkasan', 'Ringkasan bulan ini'],
   ['/bantuan', 'Tampilkan panduan'],
 ] as const
-
-const TRIAL_FEATURES = [
-  `${TRIAL_DURATION_DAYS} hari trial gratis, tanpa kartu kredit`,
-  'Catat transaksi via Telegram',
-  'Dashboard web interaktif',
-  'Grafik cashflow bulanan',
-  'Riwayat transaksi lengkap',
-  'Kategorisasi otomatis oleh AI',
-  'Data aman & terenkripsi',
-]
-
-const PREMIUM_EXTRA = [
-  `${TRIAL_DURATION_DAYS} hari trial gratis, tanpa kartu kredit`,
-  'Pencatatan tanpa batas',
-  'Prioritas support',
-]
 
 const TESTIMONIALS = [
   {

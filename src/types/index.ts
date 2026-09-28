@@ -24,7 +24,7 @@ export type SubscriptionStatus =
   | 'cancelled'
   | 'grace_period'
 export type UserRole = 'user' | 'admin'
-export type Plan = 'free' | 'starter' | 'premium'
+export type Plan = 'free' | 'premium'
 
 // ─── Query Result Types (with joins) ──────────────────────────────────────────
 

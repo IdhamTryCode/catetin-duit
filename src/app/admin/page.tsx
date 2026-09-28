@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/utils/supabase/admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, ArrowLeftRight, TrendingUp, Crown } from 'lucide-react'
-import { PLAN_NAMES, PLAN_PRICES, type Plan } from '@/lib/constants'
+import { STATUS_NAMES, SUBSCRIPTION_PRICE } from '@/lib/constants'
 import { formatIDR } from '@/lib/utils'
 
 async function getStats() {
@@ -14,32 +14,32 @@ async function getStats() {
     { data: recentUsers },
   ] = await Promise.all([
     supabase.from('profiles').select('id', { count: 'exact', head: true }).is('deleted_at', null),
-    supabase.from('profiles').select('plan').is('deleted_at', null),
+    supabase.from('profiles').select('subscription_status').is('deleted_at', null),
     supabase.from('transactions').select('id', { count: 'exact', head: true }).is('deleted_at', null),
     supabase.from('profiles')
-      .select('id, full_name, email, plan, subscription_status, created_at')
+      .select('id, full_name, email, subscription_status, created_at')
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(5),
   ])
 
-  // Aggregate plan distribution
-  const byPlan: Record<Plan, number> = { free: 0, starter: 0, premium: 0 }
+  // Distribusi status langganan
+  const byStatus: Record<string, number> = { trial: 0, premium: 0, trial_expired: 0 }
   for (const p of planCounts ?? []) {
-    const plan = p.plan as Plan
-    if (plan in byPlan) byPlan[plan]++
+    const st = p.subscription_status ?? 'trial'
+    byStatus[st] = (byStatus[st] ?? 0) + 1
   }
 
   // Estimated MRR (monthly recurring revenue)
-  const mrr = byPlan.starter * PLAN_PRICES.starter + byPlan.premium * PLAN_PRICES.premium
+  const mrr = byStatus.premium * SUBSCRIPTION_PRICE
 
-  return { totalUsers: totalUsers ?? 0, totalTransactions: totalTransactions ?? 0, byPlan, mrr, recentUsers: recentUsers ?? [] }
+  return { totalUsers: totalUsers ?? 0, totalTransactions: totalTransactions ?? 0, byStatus, mrr, recentUsers: recentUsers ?? [] }
 }
 
 export default async function AdminPage() {
-  const { totalUsers, totalTransactions, byPlan, mrr, recentUsers } = await getStats()
+  const { totalUsers, totalTransactions, byStatus, mrr, recentUsers } = await getStats()
 
-  const planOrder: Plan[] = ['free', 'starter', 'premium']
+  const statusOrder = Object.keys(byStatus)
 
   return (
     <div className="space-y-6">
@@ -76,7 +76,7 @@ export default async function AdminPage() {
               <Crown className="h-4 w-4 text-yellow-500" />
               <span className="text-xs text-muted-foreground">Berbayar</span>
             </div>
-            <p className="text-2xl font-bold">{byPlan.starter + byPlan.premium}</p>
+            <p className="text-2xl font-bold">{byStatus.premium}</p>
           </CardContent>
         </Card>
 
@@ -95,21 +95,21 @@ export default async function AdminPage() {
         {/* Plan distribution */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Distribusi Plan</CardTitle>
+            <CardTitle className="text-sm font-semibold">Distribusi Status</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {planOrder.map((plan) => {
-              const count = byPlan[plan]
+            {statusOrder.map((plan) => {
+              const count = byStatus[plan]
               const pct = totalUsers > 0 ? Math.round((count / totalUsers) * 100) : 0
               return (
                 <div key={plan}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium">{PLAN_NAMES[plan]}</span>
+                    <span className="font-medium">{STATUS_NAMES[plan] ?? plan}</span>
                     <span className="text-muted-foreground">{count} user ({pct}%)</span>
                   </div>
                   <div className="h-2 rounded-full bg-muted overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${plan === 'premium' ? 'bg-primary' : plan === 'starter' ? 'bg-blue-400' : 'bg-muted-foreground/30'}`}
+                      className={`h-full rounded-full transition-all ${plan === 'premium' ? 'bg-primary' : plan === 'trial' ? 'bg-blue-400' : 'bg-muted-foreground/30'}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -134,8 +134,8 @@ export default async function AdminPage() {
                   <p className="text-xs font-medium truncate">{u.full_name ?? u.email}</p>
                   <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>
                 </div>
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${u.plan === 'premium' ? 'bg-primary/10 text-primary' : u.plan === 'starter' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-muted text-muted-foreground'}`}>
-                  {PLAN_NAMES[u.plan as Plan] ?? u.plan}
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${u.subscription_status === 'premium' ? 'bg-primary/10 text-primary' : u.subscription_status === 'trial' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-muted text-muted-foreground'}`}>
+                  {STATUS_NAMES[u.subscription_status ?? ''] ?? u.subscription_status}
                 </span>
               </div>
             ))}

@@ -29,21 +29,21 @@ export async function createCategory(formData: FormData) {
   // ── Plan gate ─────────────────────────────────────────────────────────────
   const { data: profile } = await supabase
     .from('profiles')
-    .select('plan')
+    .select('subscription_status')
     .eq('id', user.id)
     .single()
 
-  const plan = resolvePlan(profile?.plan)
+  const plan = resolvePlan(profile?.subscription_status)
   const limit = PLAN_LIMITS[plan].customCategories
 
   if (limit === 0) {
-    return { error: 'Kategori kustom tidak tersedia di plan Free. Upgrade ke Starter atau Premium.' }
+    return { error: 'Trial kamu sudah berakhir. Upgrade ke Premium untuk membuat kategori kustom.' }
   }
 
   if (limit !== Infinity) {
     const count = await getUserCategoryCount(supabase, user.id)
     if (count >= limit) {
-      return { error: `Kamu sudah mencapai batas ${limit} kategori kustom untuk plan ${plan}. Upgrade ke Premium untuk kategori tak terbatas.` }
+      return { error: `Kamu sudah mencapai batas ${limit} kategori kustom. Upgrade ke Premium untuk kategori tak terbatas.` }
     }
   }
 

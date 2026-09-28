@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { checkDailyTransactionLimit } from '@/lib/plan'
-import { type Plan } from '@/lib/constants'
+import { resolvePlan } from '@/lib/constants'
 import { z } from 'zod'
 
 const transactionSchema = z.object({
@@ -23,16 +23,16 @@ export async function createTransaction(formData: FormData) {
   // ── Enforce daily transaction limit based on user's plan ──────────────────
   const { data: profile } = await supabase
     .from('profiles')
-    .select('plan')
+    .select('subscription_status')
     .eq('id', user.id)
     .single()
 
-  const plan = (profile?.plan ?? 'free') as Plan
+  const plan = resolvePlan(profile?.subscription_status)
   const { allowed, used, limit } = await checkDailyTransactionLimit(supabase, user.id, plan)
 
   if (!allowed) {
     return {
-      error: `Batas transaksi harian plan ${plan} sudah tercapai (${used}/${limit}). Upgrade plan untuk menambah lebih banyak transaksi.`,
+      error: `Batas transaksi harian sudah tercapai (${used}/${limit}). Upgrade ke Premium untuk pencatatan tanpa batas.`,
     }
   }
 

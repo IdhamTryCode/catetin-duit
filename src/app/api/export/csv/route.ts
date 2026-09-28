@@ -13,17 +13,16 @@ export async function GET(request: NextRequest) {
   const { supabase, user } = await getAuthFromRequest(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // ── Plan gate: Free plan cannot export ──────────────────────────────────────
+  // ── Plan gate: akses terbatas (trial berakhir) tidak bisa export ──────────────────────────────────────
   const { data: profile } = await supabase
     .from('profiles')
-    .select('plan, timezone')
+    .select('subscription_status, timezone')
     .eq('id', user.id)
     .single()
 
-  const plan = resolvePlan(profile?.plan)
-  if (plan === 'free') {
+  if (resolvePlan(profile?.subscription_status) === 'free') {
     return NextResponse.json(
-      { error: 'Fitur export CSV tersedia untuk plan Starter dan Premium.' },
+      { error: 'Fitur export CSV tersedia untuk Trial dan Premium.' },
       { status: 403 },
     )
   }
