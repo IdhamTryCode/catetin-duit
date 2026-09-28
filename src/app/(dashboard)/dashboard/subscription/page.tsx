@@ -3,7 +3,7 @@ import { Check, MessageCircle } from 'lucide-react'
 import { formatInTimeZone } from 'date-fns-tz'
 import { id as idLocale } from 'date-fns/locale'
 import { formatIDR } from '@/lib/utils'
-import { FREE_PROMO, SUBSCRIPTION_PRICE, TRIAL_DURATION_DAYS } from '@/lib/constants'
+import { FREE_PROMO, SUBSCRIPTION_PRICE, TRIAL_DURATION_DAYS, daysLeft } from '@/lib/constants'
 import { PageHeader } from '@/components/dashboard/ui'
 
 const WA_NUMBER = '6281329064923'
@@ -49,19 +49,26 @@ export default async function SubscriptionPage() {
   const isPremium = FREE_PROMO || status === 'premium' || status === 'grace_period'
   const isTrial   = !isPremium && status === 'trial'
   const isExpired = !isPremium && !isTrial
+  const premiumLeft = daysLeft(profile?.subscription_ends_at)
+  const trialLeft = daysLeft(profile?.trial_ends_at)
 
   const current = isPremium
     ? {
         name: 'Premium',
-        desc: FREE_PROMO
-          ? 'Gratis selama masa promo — semua fitur Premium terbuka tanpa batas waktu'
+        // Premium asli selalu menampilkan tanggal berakhir, walau promo aktif
+        desc: status === 'premium'
+          ? `Aktif hingga ${fmt(profile?.subscription_ends_at)}${premiumLeft !== null ? ` · sisa ${premiumLeft} hari` : ''}`
           : status === 'grace_period'
             ? 'Masa tenggang — segera perpanjang supaya pencatatan tetap jalan'
-            : `Aktif hingga ${fmt(profile?.subscription_ends_at)}`,
+            : 'Gratis selama masa promo — semua fitur Premium terbuka tanpa batas waktu',
         pill: 'Aktif',
       }
     : isTrial
-      ? { name: 'Trial', desc: `Trial gratis berakhir ${fmt(profile?.trial_ends_at)}`, pill: 'Aktif' }
+      ? {
+          name: 'Trial',
+          desc: `Trial gratis berakhir ${fmt(profile?.trial_ends_at)}${trialLeft !== null ? ` · sisa ${trialLeft} hari` : ''}`,
+          pill: 'Aktif',
+        }
       : {
           name: status === 'cancelled' ? 'Langganan berakhir' : 'Trial berakhir',
           desc: status === 'cancelled'

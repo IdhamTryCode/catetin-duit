@@ -6,7 +6,10 @@ import { BTN_PRIMARY, CARD, PageHeader, TxIcon } from '@/components/dashboard/ui
 import { type RecentTransaction, type ChartDataPoint, getJoinedCategory } from '@/types'
 import { OverviewChart } from './overview-chart'
 import { formatIDR, formatDateShort } from '@/lib/utils'
-import { TRIAL_WARNING_THRESHOLD_DAYS, FREE_PROMO } from '@/lib/constants'
+import { TRIAL_WARNING_THRESHOLD_DAYS, FREE_PROMO, GRACE_PERIOD_DAYS, daysLeft as daysUntil } from '@/lib/constants'
+
+/** Tampilkan peringatan Premium saat sisa hari <= nilai ini (sama dengan email pengingat H-3). */
+const PREMIUM_WARNING_THRESHOLD_DAYS = 3
 
 interface DashboardData {
   income: number
@@ -94,7 +97,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, telegram_chat_id, subscription_status, trial_ends_at, timezone')
+    .select('full_name, telegram_chat_id, subscription_status, trial_ends_at, subscription_ends_at, timezone')
     .eq('id', user!.id)
     .single()
 
@@ -107,6 +110,7 @@ export default async function DashboardPage() {
     ? Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
 
+  const premiumLeft = daysUntil(profile?.subscription_ends_at)
   const currentMonth = format(new Date(), 'MMMM yyyy', { locale: idLocale })
   const hasData = recentTransactions.length > 0
 
@@ -136,6 +140,20 @@ export default async function DashboardPage() {
             <span className="text-sm text-[#6B5A36]">Upgrade ke Premium supaya pencatatan via Telegram tetap jalan.</span>
           </div>
           <Link href="/dashboard/subscription" className={BTN_PRIMARY}>Upgrade</Link>
+        </div>
+      )}
+
+      {profile?.subscription_status === 'premium' && premiumLeft !== null && premiumLeft <= PREMIUM_WARNING_THRESHOLD_DAYS && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#F2DDB0] bg-[#FFF8EB] px-6 py-4">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[15px] font-bold text-[#6B4A0E]">
+              {premiumLeft === 0 ? 'Premium berakhir hari ini' : `Premium berakhir dalam ${premiumLeft} hari`}
+            </span>
+            <span className="text-sm text-[#6B5A36]">
+              Perpanjang sebelum {GRACE_PERIOD_DAYS} hari masa tenggang habis supaya pencatatan via Telegram tetap jalan.
+            </span>
+          </div>
+          <Link href="/dashboard/subscription" className={BTN_PRIMARY}>Perpanjang</Link>
         </div>
       )}
 

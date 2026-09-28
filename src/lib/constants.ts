@@ -48,19 +48,33 @@ export function resolvePlan(status: string | null | undefined): Plan {
   return (FULL_ACCESS_STATUSES as readonly string[]).includes(status ?? '') ? 'premium' : 'free'
 }
 
-/** Label badge status langganan (header & halaman Langganan). */
-export function statusBadge(status: string | null | undefined): {
+/** Sisa hari (dibulatkan ke atas, minimal 0) sampai tanggal ISO; null jika tanpa tanggal. */
+export function daysLeft(iso: string | null | undefined): number | null {
+  if (!iso) return null
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+}
+
+/**
+ * Label badge status langganan di topbar, lengkap dengan sisa hari.
+ * `endsAt` = subscription_ends_at untuk premium, trial_ends_at untuk trial.
+ * Premium asli tetap menampilkan sisa harinya walau promo aktif.
+ */
+export function statusBadge(status: string | null | undefined, endsAt?: string | null): {
   label: string
   variant: 'default' | 'secondary' | 'destructive' | 'outline'
   icon: boolean
 } {
-  if (FREE_PROMO) return { label: '✦ Premium', variant: 'default', icon: true }
+  const left = daysLeft(endsAt)
+  if (status === 'premium') {
+    return { label: left !== null ? `Premium · ${left} hari` : 'Premium', variant: 'default', icon: true }
+  }
+  if (status === 'grace_period') return { label: 'Masa tenggang', variant: 'outline', icon: false }
+  if (FREE_PROMO) return { label: 'Premium', variant: 'default', icon: true }
   switch (status) {
-    case 'premium':      return { label: '✦ Premium',      variant: 'default',     icon: true  }
-    case 'grace_period': return { label: 'Masa tenggang',  variant: 'outline',     icon: false }
-    case 'trial':        return { label: 'Trial',          variant: 'secondary',   icon: false }
-    case 'cancelled':    return { label: 'Langganan berakhir', variant: 'destructive', icon: false }
-    default:             return { label: 'Trial berakhir', variant: 'destructive', icon: false }
+    case 'trial':
+      return left ? { label: `Trial · ${left} hari`, variant: 'secondary', icon: false } : { label: 'Trial berakhir', variant: 'destructive', icon: false }
+    case 'cancelled': return { label: 'Langganan berakhir', variant: 'destructive', icon: false }
+    default:          return { label: 'Trial berakhir', variant: 'destructive', icon: false }
   }
 }
 

@@ -19,7 +19,7 @@ export async function Header() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, email, subscription_status, role')
+    .select('full_name, email, subscription_status, trial_ends_at, subscription_ends_at, role')
     .eq('id', user!.id)
     .single()
 
@@ -27,7 +27,8 @@ export async function Header() {
     ? profile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : profile?.email?.slice(0, 2).toUpperCase() ?? 'U'
 
-  const planCfg = statusBadge(profile?.subscription_status)
+  const status = profile?.subscription_status
+  const planCfg = statusBadge(status, status === 'trial' ? profile?.trial_ends_at : profile?.subscription_ends_at)
   const firstName = profile?.full_name?.split(' ')[0] ?? 'Kamu'
 
   return (
@@ -51,7 +52,7 @@ export async function Header() {
               : 'hidden rounded-full bg-cd-tint px-2.5 py-[5px] text-xs font-bold text-cd-primary-hover sm:inline-flex'
           }
         >
-          {planCfg.label.replace('✦ ', '')}
+          {planCfg.label}
         </span>
 
         <DropdownMenu>
