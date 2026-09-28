@@ -25,7 +25,11 @@ const SCRIPT: ScriptItem[] = [
 const LAST_TICK = 11
 const TICK_MS = 1400
 
-export function HeroChat() {
+/**
+ * Loop animasi chat: satu pesan tiap TICK_MS, indikator mengetik sebelum
+ * balasan bot, lalu ulang. Dengan prefers-reduced-motion langsung tampil akhir.
+ */
+export function useChatLoop() {
   const [step, setStep] = useState(0)
 
   useEffect(() => {
@@ -42,6 +46,12 @@ export function HeroChat() {
   const typing = !!next && !('u' in next)
   const totalIn = shown.reduce((a, m) => a + ('inc' in m ? m.inc ?? 0 : 0), 0)
   const totalOut = shown.reduce((a, m) => a + ('out' in m ? m.out ?? 0 : 0), 0)
+
+  return { shown, typing, totalIn, totalOut }
+}
+
+export function HeroChat() {
+  const { shown, typing, totalIn, totalOut } = useChatLoop()
 
   return (
     <div className="relative flex justify-center">

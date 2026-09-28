@@ -1,8 +1,8 @@
 import { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { AuthChat } from '@/components/landing/auth-chat'
 
 /** Kelas input auth (redesign 2026): 15px, 13×14, radius 12, fokus hijau. */
 export const AUTH_INPUT =
@@ -36,27 +36,22 @@ const TABS = [
 export function AuthCard({ title, description, children, footer, tab }: AuthCardProps) {
   return (
     <div className="grid min-h-screen bg-cd-bg text-cd-ink [grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr))]">
-      <div className="flex flex-col justify-between gap-10 bg-cd-dark p-8 text-white sm:p-10">
-        <Link href="/" className="flex items-center gap-2.5 text-white">
-          <Image src="/logo.png" alt="" width={32} height={32} className="h-8 w-8 rounded-[9px]" />
-          <span className="text-[17px] font-bold">Catetin Duit</span>
-        </Link>
-        <div className="flex max-w-[420px] flex-col gap-7">
-          <h2 className="m-0 text-[clamp(28px,3vw,38px)] font-extrabold leading-[1.12] tracking-[-.025em] text-balance">
-            Catat keuangan cukup kirim chat ke Telegram
-          </h2>
-          <div className="flex flex-col gap-2" aria-hidden>
-            <span className="self-end rounded-[18px_18px_4px_18px] bg-cd-primary px-3.5 py-2.5 text-[15px]">beli kopi 25rb</span>
-            <div className="flex flex-col gap-0.5 self-start rounded-[18px_18px_18px_4px] bg-cd-dark-2 px-3.5 py-2.5">
-              <span className="flex items-center gap-1 text-xs font-bold text-cd-accent-text">
-                <Check className="h-3 w-3" strokeWidth={3} /> Tercatat! Pengeluaran
-              </span>
-              <span className="text-base font-bold">Rp 25.000</span>
-              <span className="text-xs text-cd-on-dark-3">Makanan &amp; Minuman</span>
+      <div className="bg-cd-dark p-8 text-white sm:p-10">
+        <div className="mx-auto flex h-full w-full max-w-[440px] flex-col justify-between gap-10">
+          <Link href="/" className="flex items-center gap-2.5 text-white">
+            <Image src="/logo.png" alt="" width={32} height={32} className="h-8 w-8 rounded-[9px]" />
+            <span className="text-[17px] font-bold">Catetin Duit</span>
+          </Link>
+          <div className="flex flex-col gap-7">
+            <h2 className="m-0 text-[clamp(28px,3vw,38px)] font-extrabold leading-[1.12] tracking-[-.025em] text-balance">
+              Catat keuangan cukup kirim chat ke Telegram
+            </h2>
+            <div className="hidden min-[880px]:block">
+              <AuthChat />
             </div>
           </div>
+          <span className="hidden text-[13px] text-cd-on-dark-3 min-[880px]:block">Data terenkripsi &amp; aman</span>
         </div>
-        <span className="text-[13px] text-cd-on-dark-3">Data terenkripsi &amp; aman</span>
       </div>
 
       <div className="flex items-center justify-center px-6 py-10">
