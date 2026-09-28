@@ -20,6 +20,19 @@ export function AuthChat() {
           >
             {m.u}
           </span>
+        ) : 'rows' in m ? (
+          <div
+            key={i}
+            className="animate-cd-in flex w-[82%] flex-col gap-1.5 self-start rounded-[18px_18px_18px_4px] bg-cd-dark-2 px-3.5 py-2.5"
+          >
+            <span className="text-xs font-bold text-cd-accent-text">{m.title}</span>
+            {m.rows.map((r) => (
+              <span key={r.desc} className="flex justify-between gap-3 text-[13px]">
+                <span className="truncate text-cd-on-dark">{r.desc}</span>
+                <span className={`shrink-0 font-bold ${r.tone === 'out' ? 'text-[#FF8A8A]' : 'text-white'}`}>{r.amount}</span>
+              </span>
+            ))}
+          </div>
         ) : (
           <div
             key={i}

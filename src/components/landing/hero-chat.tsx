@@ -6,9 +6,13 @@ import { ArrowUp, Check } from 'lucide-react'
 import { BOT_USERNAME } from '@/lib/constants'
 import { formatIDR } from '@/lib/utils'
 
+type Tone = 'out' | 'in'
+
 type ScriptItem =
   | { u: string }
-  | { title: string; amount: string; meta: string; tone: 'out' | 'in'; out?: number; inc?: number }
+  | { title: string; amount: string; meta: string; tone: Tone; out?: number; inc?: number }
+  /** Balasan berbentuk daftar, mis. /riwayat (terbaru di atas, seperti handleHistory). */
+  | { title: string; rows: { desc: string; amount: string; tone: Tone }[] }
 
 const SCRIPT: ScriptItem[] = [
   { u: 'beli kopi 25rb' },
@@ -17,12 +21,21 @@ const SCRIPT: ScriptItem[] = [
   { title: 'Tercatat! Pengeluaran', amount: `-${formatIDR(30_000)}`, meta: 'Transportasi', tone: 'out', out: 30_000 },
   { u: 'terima transfer dari client 2jt' },
   { title: 'Tercatat! Pemasukan', amount: `+${formatIDR(2_000_000)}`, meta: 'Pemasukan Lain', tone: 'in', inc: 2_000_000 },
+  { u: '/riwayat' },
+  {
+    title: 'Transaksi terakhir',
+    rows: [
+      { desc: 'Terima transfer dari client', amount: `+${formatIDR(2_000_000)}`, tone: 'in' },
+      { desc: 'Bensin motor', amount: `-${formatIDR(30_000)}`, tone: 'out' },
+      { desc: 'Beli kopi', amount: `-${formatIDR(25_000)}`, tone: 'out' },
+    ],
+  },
   { u: '/ringkasan' },
   { title: 'Ringkasan bulan ini', amount: `Net +${formatIDR(1_945_000)}`, meta: `Masuk ${formatIDR(2_000_000)} · Keluar ${formatIDR(55_000)}`, tone: 'in' },
 ]
 
-/** 8 pesan + jeda, lalu ulang dari awal. */
-const LAST_TICK = 11
+/** Semua pesan + 3 tick jeda, lalu ulang dari awal. */
+const LAST_TICK = SCRIPT.length + 3
 const TICK_MS = 1400
 
 /**
@@ -65,7 +78,7 @@ export function HeroChat() {
         </div>
 
         <div
-          className="flex h-[430px] flex-col justify-end gap-2 overflow-hidden bg-cd-chat p-4"
+          className="flex h-[430px] flex-col justify-end gap-2 overflow-hidden bg-cd-chat p-4 [mask-image:linear-gradient(to_bottom,transparent,#000_12%)]"
           aria-label="Contoh percakapan dengan bot"
         >
           {shown.map((m, i) =>
@@ -75,6 +88,19 @@ export function HeroChat() {
                 className="animate-cd-in max-w-[78%] self-end rounded-[18px_18px_4px_18px] bg-cd-primary px-3.5 py-2.5 text-[15px] font-medium text-white"
               >
                 {m.u}
+              </div>
+            ) : 'rows' in m ? (
+              <div
+                key={i}
+                className="animate-cd-in flex w-[82%] flex-col gap-1.5 self-start rounded-[18px_18px_18px_4px] bg-white px-3.5 py-2.5 shadow-[0_1px_1px_rgba(6,20,13,.06)]"
+              >
+                <span className="text-xs font-bold text-cd-success">{m.title}</span>
+                {m.rows.map((r) => (
+                  <span key={r.desc} className="flex justify-between gap-3 text-[13px]">
+                    <span className="truncate text-cd-ink-2">{r.desc}</span>
+                    <span className={`shrink-0 font-bold ${r.tone === 'out' ? 'text-cd-expense' : 'text-cd-primary'}`}>{r.amount}</span>
+                  </span>
+                ))}
               </div>
             ) : (
               <div
