@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthFromRequest } from '@/utils/supabase/server'
 import { format } from 'date-fns'
 import { resolvePlan } from '@/lib/constants'
+import { promoActive } from '@/lib/settings'
 
 /** Escape a CSV cell value — wraps in quotes and escapes inner quotes */
 function csvCell(value: string | number | null | undefined): string {
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     .eq('id', user.id)
     .single()
 
-  if (resolvePlan(profile?.subscription_status) === 'free') {
+  if (resolvePlan(profile?.subscription_status, await promoActive()) === 'free') {
     return NextResponse.json(
       { error: 'Fitur export CSV tersedia untuk Trial dan Premium.' },
       { status: 403 },

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import { PLAN_LIMITS, resolvePlan } from '@/lib/constants'
 import { z } from 'zod'
+import { promoActive } from '@/lib/settings'
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Nama kategori wajib diisi').max(50, 'Nama terlalu panjang'),
@@ -33,7 +34,7 @@ export async function createCategory(formData: FormData) {
     .eq('id', user.id)
     .single()
 
-  const plan = resolvePlan(profile?.subscription_status)
+  const plan = resolvePlan(profile?.subscription_status, await promoActive())
   const limit = PLAN_LIMITS[plan].customCategories
 
   if (limit === 0) {

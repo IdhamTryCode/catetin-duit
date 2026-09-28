@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthFromRequest } from '@/utils/supabase/server'
 import { resolvePlan } from '@/lib/constants'
+import { promoActive } from '@/lib/settings'
 
 export async function GET(request: NextRequest) {
   const { supabase, user } = await getAuthFromRequest(request)
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     .eq('id', user.id)
     .single()
 
-  const plan = resolvePlan(profile?.subscription_status)
+  const plan = resolvePlan(profile?.subscription_status, await promoActive())
 
   // Fetch user's custom categories
   const { data: userCategories } = await supabase

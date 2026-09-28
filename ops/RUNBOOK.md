@@ -58,14 +58,28 @@ Tanpa `CRON_SECRET` di env Vercel, panggilan cron ditolak 401.
 berisi `NEXT_PUBLIC_FREE_PROMO`, sehingga cron lokal mengubah status user di
 database produksi dan mengirim email sungguhan.
 
+## Panel admin (/admin)
+
+- **Users** → filter status, akan habis ≤3 hari, Telegram. **Kelola** membuka
+  detail user: catat pembayaran manual (Premium +N bulan, opsional email
+  konfirmasi), perpanjang trial, set Premium sampai tanggal, ubah status/role,
+  putuskan Telegram, reset kode connect (buka kunci & batas 3/jam).
+- **Pembayaran** → semua pembayaran (tabel `payments`) + riwayat aksi admin
+  (tabel `audit_logs`).
+- **Broadcast** → pengumuman ke user via bot dan/atau email, per segmen status.
+- **Sistem** → status webhook, run cron terakhir, chat per hari & perkiraan biaya LLM.
+- **Pengaturan** → promo (+ tanggal berakhir), harga Premium, masa tenggang.
+  Berlaku langsung tanpa redeploy. Butuh migrasi `20260928_app_settings.sql`.
+
 ## Promo gratis
 
-Saklar tunggal: env `NEXT_PUBLIC_FREE_PROMO=true` di Vercel. Mengubahnya
-**wajib diikuti Redeploy** (env `NEXT_PUBLIC_` ditanam saat build).
-Saat promo dimatikan, run cron berikutnya menandai semua trial yang sudah
-lewat sebagai `trial_expired` dan mengirim email ke mereka sekaligus.
+Diatur dari **Admin → Pengaturan** (bisa diberi tanggal berakhir otomatis).
+Env `NEXT_PUBLIC_FREE_PROMO=true` di Vercel tetap ada sebagai saklar darurat
+yang selalu menang; biarkan `false` supaya pengaturan admin yang berlaku.
+Saat promo berakhir, run cron berikutnya menandai trial yang sudah lewat
+sebagai `trial_expired` dan mengirim email ke mereka sekaligus.
 
 ## Aktivasi Premium manual (pembayaran via WhatsApp)
 
-Admin → Users → kolom "Ubah status" → **Premium (+30 hari)**. Diperpanjang dari
-tanggal berakhir yang masih berjalan, atau dari hari ini.
+Admin → Users → Kelola → **Catat & aktifkan Premium**. Pembayaran tercatat di
+`payments`, Premium diperpanjang dari tanggal berakhir yang masih berjalan.

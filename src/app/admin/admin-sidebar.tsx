@@ -3,15 +3,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, Users, ArrowLeft, LogOut, ShieldCheck } from 'lucide-react'
 import { signOut } from '@/app/(auth)/actions'
-
-const navItems = [
-  { href: '/admin',       label: 'Overview', icon: LayoutDashboard },
-  { href: '/admin/users', label: 'Users',    icon: Users           },
-]
+import { ADMIN_NAV, isAdminNavActive } from './admin-nav'
 
 interface Props {
   profile: { full_name: string | null; email: string }
@@ -21,53 +15,44 @@ export function AdminSidebar({ profile }: Props) {
   const pathname = usePathname()
 
   return (
-    <aside className="hidden md:flex w-60 flex-col h-full bg-card border-r">
-      {/* Logo */}
-      <div className="h-16 px-5 flex items-center gap-2.5 border-b">
-        <Image src="/logo.png" alt="Catetin Duit" width={32} height={32} className="rounded-lg flex-shrink-0" />
-        <div>
-          <p className="font-bold text-sm leading-tight">Catetin Duit</p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <ShieldCheck className="h-2.5 w-2.5 text-primary" />
-            <p className="text-[10px] text-primary font-medium leading-none">Admin Panel</p>
-          </div>
-        </div>
-      </div>
+    <aside className="hidden h-full w-60 flex-shrink-0 flex-col bg-cd-dark px-3 py-[18px] text-white md:flex">
+      <Link href="/admin" className="flex items-center gap-2.5 px-2 pb-[22px] pt-1 text-white">
+        <Image src="/logo.png" alt="" width={32} height={32} className="h-8 w-8 rounded-[9px]" />
+        <span className="flex flex-col">
+          <span className="text-base font-bold leading-tight">Catetin Duit</span>
+          <span className="text-[11px] font-semibold text-cd-accent-text">Admin Panel</span>
+        </span>
+      </Link>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href
+      <nav className="flex flex-col gap-0.5 overflow-y-auto text-sm font-medium">
+        {ADMIN_NAV.map(({ href, label, icon: Icon }) => {
+          const active = isAdminNavActive(pathname, href)
           return (
-            <Button
+            <Link
               key={href}
-              asChild
-              variant={isActive ? 'default' : 'ghost'}
-              className={cn('w-full justify-start gap-3', !isActive && 'text-muted-foreground')}
+              href={href}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 transition-colors',
+                active ? 'bg-cd-accent font-bold text-cd-dark' : 'text-cd-on-dark hover:bg-cd-dark-2 hover:text-white',
+              )}
             >
-              <Link href={href}>
-                <Icon className={cn('h-4 w-4 flex-shrink-0', isActive && 'stroke-[2.5]')} />
-                {label}
-              </Link>
-            </Button>
+              <Icon className="h-4 w-4 flex-shrink-0" />
+              {label}
+            </Link>
           )
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="px-3 py-4 border-t space-y-2">
-        <p className="text-xs text-muted-foreground px-2 truncate">{profile.full_name ?? profile.email}</p>
-        <Button asChild variant="ghost" className="w-full justify-start gap-3 text-muted-foreground" size="sm">
-          <Link href="/dashboard">
-            <ArrowLeft className="h-4 w-4" />
-            Kembali ke App
-          </Link>
-        </Button>
+      <div className="mt-auto flex flex-col gap-1 border-t border-cd-dark-line pt-3 text-sm">
+        <p className="truncate px-3 pb-1 text-xs text-cd-on-dark-3">{profile.full_name ?? profile.email}</p>
+        <Link href="/dashboard" className="rounded-[10px] px-3 py-2 text-cd-on-dark hover:bg-cd-dark-2 hover:text-white">
+          ← Kembali ke App
+        </Link>
         <form action={signOut}>
-          <Button variant="ghost" className="w-full justify-start gap-3 text-destructive hover:text-destructive" size="sm">
-            <LogOut className="h-4 w-4" />
+          <button type="submit" className="w-full cursor-pointer rounded-[10px] px-3 py-2 text-left text-[#FF8A8A] hover:bg-cd-dark-2">
             Keluar
-          </Button>
+          </button>
         </form>
       </div>
     </aside>

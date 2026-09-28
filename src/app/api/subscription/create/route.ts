@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createClient, createAdminClient } from '@/utils/supabase/server'
-import { SUBSCRIPTION_PRICE, PAYMENT_EXPIRY_MINUTES, FREE_PROMO } from '@/lib/constants'
+import { PAYMENT_EXPIRY_MINUTES } from '@/lib/constants'
+import { getSettings, isPromoActive } from '@/lib/settings'
 
 const IS_SANDBOX = process.env.NODE_ENV !== 'production'
 
@@ -22,7 +23,9 @@ const IS_SANDBOX = process.env.NODE_ENV !== 'production'
  */
 export async function POST() {
   // Promo gratis aktif → semua fitur sudah terbuka, pembayaran dinonaktifkan.
-  if (FREE_PROMO) {
+  const settings = await getSettings()
+  const SUBSCRIPTION_PRICE = settings.premiumPrice
+  if (isPromoActive(settings)) {
     return NextResponse.json(
       { error: 'Semua fitur sedang gratis selama masa promo. Tidak perlu berlangganan.' },
       { status: 403 },

@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/server'
 import { checkDailyTransactionLimit } from '@/lib/plan'
 import { resolvePlan } from '@/lib/constants'
 import { z } from 'zod'
+import { promoActive } from '@/lib/settings'
 
 const transactionSchema = z.object({
   amount: z.coerce.number().positive('Jumlah harus lebih dari 0'),
@@ -27,7 +28,7 @@ export async function createTransaction(formData: FormData) {
     .eq('id', user.id)
     .single()
 
-  const plan = resolvePlan(profile?.subscription_status)
+  const plan = resolvePlan(profile?.subscription_status, await promoActive())
   const { allowed, used, limit } = await checkDailyTransactionLimit(supabase, user.id, plan)
 
   if (!allowed) {

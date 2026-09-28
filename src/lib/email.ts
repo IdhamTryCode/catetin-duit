@@ -109,12 +109,12 @@ export async function sendWelcomeEmail(to: string, name: string) {
  * @param daysLeft - Number of days remaining (3 or 1)
  * @param trialEndsAt - ISO date string of trial end date
  */
-export async function sendTrialReminderEmail(to: string, name: string, daysLeft: number, trialEndsAt: string) {
+export async function sendTrialReminderEmail(to: string, name: string, daysLeft: number, trialEndsAt: string, price: number = SUBSCRIPTION_PRICE) {
   const firstName = name.split(' ')[0]
   const formattedDate = new Date(trialEndsAt).toLocaleDateString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
-  const priceFormatted = formatIDR(SUBSCRIPTION_PRICE)
+  const priceFormatted = formatIDR(price)
 
   const html = baseLayout(`
     ${h1(`Trial kamu berakhir ${daysLeft === 1 ? 'besok' : `dalam ${daysLeft} hari`} ⏰`)}
@@ -143,9 +143,9 @@ export async function sendTrialReminderEmail(to: string, name: string, daysLeft:
  * @param to - Recipient email address
  * @param name - User's full name
  */
-export async function sendTrialExpiredEmail(to: string, name: string) {
+export async function sendTrialExpiredEmail(to: string, name: string, price: number = SUBSCRIPTION_PRICE) {
   const firstName = name.split(' ')[0]
-  const priceFormatted = formatIDR(SUBSCRIPTION_PRICE)
+  const priceFormatted = formatIDR(price)
   const html = baseLayout(`
     ${h1('Trial kamu sudah berakhir 😔')}
     ${p(`Halo ${firstName}, trial gratis kamu sudah berakhir. Pencatatan via Telegram untuk saat ini dinonaktifkan.`)}
@@ -238,12 +238,12 @@ export async function sendPaymentFailedEmail(to: string, name: string) {
  * @param daysLeft - Number of days remaining (3 or 1)
  * @param subscriptionEndsAt - ISO date string when subscription ends
  */
-export async function sendPremiumExpiringEmail(to: string, name: string, daysLeft: number, subscriptionEndsAt: string) {
+export async function sendPremiumExpiringEmail(to: string, name: string, daysLeft: number, subscriptionEndsAt: string, price: number = SUBSCRIPTION_PRICE) {
   const firstName = name.split(' ')[0]
   const formattedDate = new Date(subscriptionEndsAt).toLocaleDateString('id-ID', {
     day: 'numeric', month: 'long', year: 'numeric',
   })
-  const priceFormatted = formatIDR(SUBSCRIPTION_PRICE)
+  const priceFormatted = formatIDR(price)
 
   const html = baseLayout(`
     ${h1(`Premium berakhir dalam ${daysLeft} hari ⏰`)}
@@ -262,4 +262,20 @@ export async function sendPremiumExpiringEmail(to: string, name: string, daysLef
     subject: `⏰ Premium Catetin Duit berakhir dalam ${daysLeft} hari`,
     html,
   })
+}
+
+/**
+ * Email pengumuman dari admin (broadcast). Teks polos; baris baru dipertahankan.
+ */
+export async function sendBroadcastEmail(to: string, name: string, subject: string, message: string) {
+  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const firstName = (name || 'Kamu').split(' ')[0]
+  const body = esc(message).replace(/\n/g, '<br/>')
+  const html = baseLayout(`
+    ${h1(esc(subject))}
+    ${p(`Halo ${esc(firstName)},`)}
+    ${p(body)}
+    ${button('Buka Dashboard', `${APP_URL}/dashboard`)}
+  `)
+  return resend.emails.send({ from: FROM, to, subject, html })
 }

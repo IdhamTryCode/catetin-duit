@@ -22,24 +22,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const profile = await requireAdmin()
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-cd-bg text-cd-ink">
       <AdminSidebar profile={profile} />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Admin header bar */}
-        <div className="h-16 border-b bg-card px-4 md:px-6 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-2 md:hidden">
-            <span className="font-bold text-sm">Admin Panel</span>
-          </div>
-          <div className="hidden md:block">
-            <p className="text-sm text-muted-foreground">
-              Admin Panel — <span className="font-semibold text-foreground">{profile.full_name ?? profile.email}</span>
-            </p>
-          </div>
-        </div>
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex flex-shrink-0 items-center justify-between border-b border-cd-line bg-white/92 px-4 py-3.5 backdrop-blur-md md:px-8">
+          <p className="m-0 text-sm text-cd-muted-2">
+            Admin Panel · <strong className="text-cd-ink">{profile.full_name ?? profile.email}</strong>
+          </p>
+        </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6">
-          {children}
+        <main className="flex-1 overflow-y-auto">
+          <div className="w-full max-w-[1120px] p-4 pb-24 md:p-8 md:pb-8">{children}</div>
         </main>
       </div>
 

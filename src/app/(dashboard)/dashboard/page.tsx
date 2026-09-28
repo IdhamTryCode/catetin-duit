@@ -6,7 +6,8 @@ import { BTN_PRIMARY, CARD, PageHeader, TxIcon } from '@/components/dashboard/ui
 import { type RecentTransaction, type ChartDataPoint, getJoinedCategory } from '@/types'
 import { OverviewChart } from './overview-chart'
 import { formatIDR, formatDateShort } from '@/lib/utils'
-import { TRIAL_WARNING_THRESHOLD_DAYS, FREE_PROMO, GRACE_PERIOD_DAYS, daysLeft as daysUntil } from '@/lib/constants'
+import { TRIAL_WARNING_THRESHOLD_DAYS, daysLeft as daysUntil } from '@/lib/constants'
+import { getSettings, isPromoActive } from '@/lib/settings'
 
 /** Tampilkan peringatan Premium saat sisa hari <= nilai ini (sama dengan email pengingat H-3). */
 const PREMIUM_WARNING_THRESHOLD_DAYS = 3
@@ -111,6 +112,8 @@ export default async function DashboardPage() {
     : null
 
   const premiumLeft = daysUntil(profile?.subscription_ends_at)
+  const settings = await getSettings()
+  const promo = isPromoActive(settings)
   const currentMonth = format(new Date(), 'MMMM yyyy', { locale: idLocale })
   const hasData = recentTransactions.length > 0
 
@@ -133,7 +136,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {!FREE_PROMO && profile?.subscription_status === 'trial' && daysLeft !== null && daysLeft <= TRIAL_WARNING_THRESHOLD_DAYS && (
+      {!promo && profile?.subscription_status === 'trial' && daysLeft !== null && daysLeft <= TRIAL_WARNING_THRESHOLD_DAYS && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#F2DDB0] bg-[#FFF8EB] px-6 py-4">
           <div className="flex flex-col gap-0.5">
             <span className="text-[15px] font-bold text-[#6B4A0E]">Trial berakhir dalam {daysLeft} hari</span>
@@ -150,7 +153,7 @@ export default async function DashboardPage() {
               {premiumLeft === 0 ? 'Premium berakhir hari ini' : `Premium berakhir dalam ${premiumLeft} hari`}
             </span>
             <span className="text-sm text-[#6B5A36]">
-              Perpanjang sebelum {GRACE_PERIOD_DAYS} hari masa tenggang habis supaya pencatatan via Telegram tetap jalan.
+              Perpanjang sebelum {settings.graceDays} hari masa tenggang habis supaya pencatatan via Telegram tetap jalan.
             </span>
           </div>
           <Link href="/dashboard/subscription" className={BTN_PRIMARY}>Perpanjang</Link>

@@ -6,6 +6,7 @@ import { TransactionsTable } from './transactions-table'
 import { AddTransaction } from './add-transaction'
 import { parsePageParam } from '@/lib/utils'
 import { PAGE_SIZE, resolvePlan } from '@/lib/constants'
+import { promoActive } from '@/lib/settings'
 
 export default async function TransactionsPage({
   searchParams,
@@ -22,7 +23,7 @@ export default async function TransactionsPage({
     .single()
 
   const timezone   = profile?.timezone ?? 'Asia/Jakarta'
-  const canExport  = resolvePlan(profile?.subscription_status) === 'premium'
+  const canExport  = resolvePlan(profile?.subscription_status, await promoActive()) === 'premium'
   const page       = parsePageParam(searchParams?.page)
   const pageSize   = PAGE_SIZE
   const typeFilter = searchParams?.type

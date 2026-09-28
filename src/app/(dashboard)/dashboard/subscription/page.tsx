@@ -3,7 +3,8 @@ import { Check, MessageCircle } from 'lucide-react'
 import { formatInTimeZone } from 'date-fns-tz'
 import { id as idLocale } from 'date-fns/locale'
 import { formatIDR } from '@/lib/utils'
-import { FREE_PROMO, SUBSCRIPTION_PRICE, TRIAL_DURATION_DAYS, daysLeft } from '@/lib/constants'
+import { TRIAL_DURATION_DAYS, daysLeft } from '@/lib/constants'
+import { getSettings, isPromoActive } from '@/lib/settings'
 import { PageHeader } from '@/components/dashboard/ui'
 
 const WA_NUMBER = '6281329064923'
@@ -11,8 +12,8 @@ const WA_NUMBER = '6281329064923'
 const TRIAL_ITEMS = ['Catat transaksi via Telegram', 'Dashboard web & grafik cashflow', 'Kategorisasi otomatis oleh AI']
 const PREMIUM_ITEMS = ['Semua fitur Trial', 'Pencatatan tanpa batas', 'Prioritas support']
 
-function buildWaLink(): string {
-  const msg = `Halo CatetinDuit, aku mau berlangganan Premium (${formatIDR(SUBSCRIPTION_PRICE)}/bulan). Boleh dibantu proses pembayarannya?`
+function buildWaLink(price: number): string {
+  const msg = `Halo CatetinDuit, aku mau berlangganan Premium (${formatIDR(price)}/bulan). Boleh dibantu proses pembayarannya?`
   return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`
 }
 
@@ -46,7 +47,10 @@ export default async function SubscriptionPage() {
     iso ? formatInTimeZone(new Date(iso), timezone, 'd MMMM yyyy', { locale: idLocale }) : '-'
 
   // Paket yang sedang berlaku untuk user ini
-  const isPremium = FREE_PROMO || status === 'premium' || status === 'grace_period'
+  const settings = await getSettings()
+  const promo = isPromoActive(settings)
+  const price = settings.premiumPrice
+  const isPremium = promo || status === 'premium' || status === 'grace_period'
   const isTrial   = !isPremium && status === 'trial'
   const isExpired = !isPremium && !isTrial
   const premiumLeft = daysLeft(profile?.subscription_ends_at)
@@ -139,7 +143,7 @@ export default async function SubscriptionPage() {
             {isPremium && <span className="rounded-full bg-cd-tint px-[9px] py-1 text-xs font-bold text-cd-primary-hover">Plan kamu</span>}
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-[34px] font-extrabold tracking-[-.03em]">{formatIDR(SUBSCRIPTION_PRICE)}</span>
+            <span className="text-[34px] font-extrabold tracking-[-.03em]">{formatIDR(price)}</span>
             <span className="text-sm text-cd-muted-2">/ bulan</span>
           </div>
           <Items items={PREMIUM_ITEMS} />
@@ -147,7 +151,7 @@ export default async function SubscriptionPage() {
             <span className="rounded-xl bg-cd-tint p-3 text-center text-sm font-bold text-cd-primary-hover">Plan Aktif</span>
           ) : (
             <a
-              href={buildWaLink()}
+              href={buildWaLink(price)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 rounded-xl bg-cd-primary p-3 text-sm font-bold text-white hover:bg-cd-primary-hover"

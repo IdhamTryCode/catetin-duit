@@ -42,9 +42,12 @@ export const FREE_PROMO = process.env.NEXT_PUBLIC_FREE_PROMO === 'true'
 /** Tier yang diberikan ke semua user selama promo aktif. */
 export const PROMO_PLAN: Plan = 'premium'
 
-/** Tier akses efektif dari subscription_status (promo → PROMO_PLAN). */
-export function resolvePlan(status: string | null | undefined): Plan {
-  if (FREE_PROMO) return PROMO_PLAN
+/**
+ * Tier akses efektif dari subscription_status (promo → PROMO_PLAN).
+ * `promo` = hasil promoActive() dari src/lib/settings.ts; default env.
+ */
+export function resolvePlan(status: string | null | undefined, promo: boolean = FREE_PROMO): Plan {
+  if (promo) return PROMO_PLAN
   return (FULL_ACCESS_STATUSES as readonly string[]).includes(status ?? '') ? 'premium' : 'free'
 }
 
@@ -59,7 +62,7 @@ export function daysLeft(iso: string | null | undefined): number | null {
  * `endsAt` = subscription_ends_at untuk premium, trial_ends_at untuk trial.
  * Premium asli tetap menampilkan sisa harinya walau promo aktif.
  */
-export function statusBadge(status: string | null | undefined, endsAt?: string | null): {
+export function statusBadge(status: string | null | undefined, endsAt?: string | null, promo: boolean = FREE_PROMO): {
   label: string
   variant: 'default' | 'secondary' | 'destructive' | 'outline'
   icon: boolean
@@ -69,7 +72,7 @@ export function statusBadge(status: string | null | undefined, endsAt?: string |
     return { label: left !== null ? `Premium · ${left} hari` : 'Premium', variant: 'default', icon: true }
   }
   if (status === 'grace_period') return { label: 'Masa tenggang', variant: 'outline', icon: false }
-  if (FREE_PROMO) return { label: 'Premium', variant: 'default', icon: true }
+  if (promo) return { label: 'Premium', variant: 'default', icon: true }
   switch (status) {
     case 'trial':
       return left ? { label: `Trial · ${left} hari`, variant: 'secondary', icon: false } : { label: 'Trial berakhir', variant: 'destructive', icon: false }

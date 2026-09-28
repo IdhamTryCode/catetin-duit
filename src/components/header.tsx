@@ -12,6 +12,7 @@ import { ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { statusBadge } from '@/lib/constants'
+import { promoActive } from '@/lib/settings'
 
 export async function Header() {
   const supabase = await createClient()
@@ -28,7 +29,7 @@ export async function Header() {
     : profile?.email?.slice(0, 2).toUpperCase() ?? 'U'
 
   const status = profile?.subscription_status
-  const planCfg = statusBadge(status, status === 'trial' ? profile?.trial_ends_at : profile?.subscription_ends_at)
+  const planCfg = statusBadge(status, status === 'trial' ? profile?.trial_ends_at : profile?.subscription_ends_at, await promoActive())
   const firstName = profile?.full_name?.split(' ')[0] ?? 'Kamu'
 
   return (

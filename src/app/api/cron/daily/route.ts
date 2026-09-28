@@ -5,7 +5,8 @@ import {
   sendTrialExpiredEmail,
   sendPremiumExpiringEmail,
 } from '@/lib/email'
-import { TRIAL_REMINDER_DAYS, PREMIUM_REMINDER_DAYS, FREE_PROMO, GRACE_PERIOD_DAYS } from '@/lib/constants'
+import { TRIAL_REMINDER_DAYS, PREMIUM_REMINDER_DAYS } from '@/lib/constants'
+import { getSettings, isPromoActive, saveSetting } from '@/lib/settings'
 
 /**
  * Validate that the request originates from Vercel Cron or an authorized manual trigger.
@@ -42,7 +43,7 @@ function daysBetween(dateStr: string): number {
  * 2. Trial expiry    — marks expired trials as 'trial_expired' and sends email.
  * 3. Premium reminders — emails premium users H-3 and H-1 before subscription ends.
  * 4. Premium expiry  — premium yang lewat subscription_ends_at → 'grace_period'
- *                      (akses tetap penuh GRACE_PERIOD_DAYS hari), lalu → 'cancelled'
+ *                      (akses tetap penuh selama graceDays di pengaturan), lalu → 'cancelled'
  *                      (bot memblokir, web akses terbatas). Perpanjangan dari admin
  *                      mengembalikan status ke 'premium'.
  *
@@ -54,6 +55,9 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = createAdminClient()
+  const settings = await getSettings()
+  const promo = isPromoActive(settings)
+  const price = settings.premiumPrice
   const results = {
     trial_reminder: 0,
     trial_expired: 0,
@@ -72,7 +76,7 @@ export async function GET(req: NextRequest) {
 
   if (trialErr) {
     results.errors.push(`trial_query: ${trialErr.message}`)
-  } else if (!FREE_PROMO) {
+  } else if (!promo) {
     for (const profile of trialUsers ?? []) {
       const days = daysBetween(profile.trial_ends_at)
       if (!(TRIAL_REMINDER_DAYS as readonly number[]).includes(days)) continue
@@ -86,6 +90,7 @@ export async function GET(req: NextRequest) {
           profile.full_name ?? 'Pengguna',
           days,
           profile.trial_ends_at,
+          price,
         )
         results.trial_reminder++
       } catch (e) {
@@ -103,7 +108,7 @@ export async function GET(req: NextRequest) {
 
   if (expiredErr) {
     results.errors.push(`expired_query: ${expiredErr.message}`)
-  } else if (!FREE_PROMO) {
+  } else if (!promo) {
     for (const profile of expiredTrialUsers ?? []) {
       await supabase
         .from('profiles')
@@ -114,7 +119,7 @@ export async function GET(req: NextRequest) {
       if (!user?.email) continue
 
       try {
-        await sendTrialExpiredEmail(user.email, profile.full_name ?? 'Pengguna')
+        await sendTrialExpiredEmail(user.email, profile.full_name ?? 'Pengguna', price)
         results.trial_expired++
       } catch (e) {
         results.errors.push(`trial_expired ${user.email}: ${e}`)
@@ -146,6 +151,7 @@ export async function GET(req: NextRequest) {
           profile.full_name ?? 'Pengguna',
           days,
           profile.subscription_ends_at,
+          price,
         )
         results.premium_expiring++
       } catch (e) {
@@ -158,7 +164,7 @@ export async function GET(req: NextRequest) {
   // Tahap grace → cancelled diproses dulu supaya satu user tidak melompati dua
   // tahap dalam satu kali jalan. Batas tenggang dihitung dari subscription_ends_at.
   const now = new Date()
-  const graceCutoff = new Date(now.getTime() - GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  const graceCutoff = new Date(now.getTime() - settings.graceDays * 24 * 60 * 60 * 1000).toISOString()
 
   const { data: graceEnded, error: graceErr } = await supabase
     .from('profiles')
@@ -182,6 +188,8 @@ export async function GET(req: NextRequest) {
 
   const hasErrors = results.errors.length > 0
   console.log('[cron/daily]', results)
+  // Ditampilkan di Admin → Sistem. Gagal simpan (tabel belum ada) tidak fatal.
+  await saveSetting('cron_last_run', { at: new Date().toISOString(), promo, results })
 
   return NextResponse.json(
     { ok: !hasErrors, ...results },

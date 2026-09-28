@@ -1,20 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { toast } from 'sonner'
-import { Search, Shield, ShieldOff } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { adminUpdateUserStatus, adminUpdateUserRole } from '../actions'
-import { STATUS_NAMES, SUBSCRIPTION_DURATION_DAYS } from '@/lib/constants'
+import { ShieldCheck } from 'lucide-react'
+import { CARD, PageHeader } from '@/components/dashboard/ui'
+import { FIELD } from '@/components/dashboard/modal'
+import { EndsAt, StatusPill } from '../ui'
 
 interface UserRow {
   id: string
@@ -22,220 +14,119 @@ interface UserRow {
   full_name: string | null
   role: 'user' | 'admin'
   subscription_status: string
-  subscription_ends_at: string | null
-  created_at: string
+  ends_at: string | null
   telegram_chat_id: number | null
+  created_at: string
 }
 
-interface ApiResponse {
-  users: UserRow[]
-  total: number
-}
+const STATUS_FILTERS = [
+  ['', 'Semua status'],
+  ['trial', 'Trial'],
+  ['premium', 'Premium'],
+  ['grace_period', 'Masa tenggang'],
+  ['expired', 'Sudah berakhir'],
+] as const
 
-function StatusSelect({ user, onChanged }: { user: UserRow; onChanged: () => void }) {
-  const [isPending, startTransition] = useTransition()
-
-  function handleChange(status: string | null) {
-    if (!status || (status === user.subscription_status && status !== 'premium')) return
-    if (status === 'premium' && !confirm(`Aktifkan/perpanjang Premium ${user.email} selama ${SUBSCRIPTION_DURATION_DAYS} hari?`)) return
-    startTransition(async () => {
-      const fd = new FormData()
-      fd.append('user_id', user.id)
-      fd.append('status', status)
-      const result = await adminUpdateUserStatus(fd)
-      if (result?.error) toast.error(result.error)
-      else { toast.success(`Status ${user.email} diubah ke ${STATUS_NAMES[status] ?? status}`); onChanged() }
-    })
-  }
-
-  return (
-    <Select value={user.subscription_status} onValueChange={handleChange} disabled={isPending}>
-      <SelectTrigger className="h-7 w-36 text-xs">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="trial">Trial</SelectItem>
-        <SelectItem value="premium">Premium (+{SUBSCRIPTION_DURATION_DAYS} hari)</SelectItem>
-        <SelectItem value="trial_expired">Trial berakhir</SelectItem>
-        <SelectItem value="grace_period">Masa tenggang</SelectItem>
-        <SelectItem value="cancelled">Langganan berakhir</SelectItem>
-      </SelectContent>
-    </Select>
-  )
-}
-
-function RoleToggle({ user, onChanged }: { user: UserRow; onChanged: () => void }) {
-  const [isPending, startTransition] = useTransition()
-
-  function toggle() {
-    const newRole = user.role === 'admin' ? 'user' : 'admin'
-    if (!confirm(`Ubah role ${user.email} ke "${newRole}"?`)) return
-    startTransition(async () => {
-      const fd = new FormData()
-      fd.append('user_id', user.id)
-      fd.append('role', newRole)
-      const result = await adminUpdateUserRole(fd)
-      if (result?.error) toast.error(result.error)
-      else { toast.success('Role berhasil diubah'); onChanged() }
-    })
-  }
-
-  return (
-    <button
-      onClick={toggle}
-      disabled={isPending}
-      title={user.role === 'admin' ? 'Hapus admin' : 'Jadikan admin'}
-      className="p-1.5 rounded hover:bg-muted transition-colors"
-    >
-      {user.role === 'admin'
-        ? <Shield className="h-3.5 w-3.5 text-primary" />
-        : <ShieldOff className="h-3.5 w-3.5 text-muted-foreground" />}
-    </button>
-  )
-}
-
-export default function AdminUsersPage() {
+export default function AdminUsersPage({ searchParams }: { searchParams: { status?: string } }) {
+  // Status trial_expired/cancelled dari link Overview masuk ke grup "Sudah berakhir".
+  const initialStatus = ['trial_expired', 'cancelled'].includes(searchParams?.status ?? '') ? 'expired' : searchParams?.status ?? ''
   const [users, setUsers] = useState<UserRow[]>([])
-  const [total, setTotal] = useState(0)
   const [search, setSearch] = useState('')
+  const [status, setStatus] = useState(initialStatus)
+  const [telegram, setTelegram] = useState('')
+  const [expiring, setExpiring] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   const load = useCallback(async () => {
     setIsLoading(true)
     try {
-      const res = await fetch(`/api/admin/users?q=${encodeURIComponent(search)}`)
-      const data: ApiResponse = await res.json()
+      const params = new URLSearchParams({ q: search, status, telegram, expiring: expiring ? '1' : '' })
+      const res = await fetch(`/api/admin/users?${params}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
       setUsers(data.users ?? [])
-      setTotal(data.total ?? 0)
     } catch {
       toast.error('Gagal memuat data user')
     } finally {
       setIsLoading(false)
     }
-  }, [search])
+  }, [search, status, telegram, expiring])
 
-  useEffect(() => { load() }, [load])
-
-  const statusColor: Record<string, string> = {
-    trial:         'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    premium:       'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    trial_expired: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    grace_period:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    cancelled:     'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
-  }
+  useEffect(() => {
+    const t = setTimeout(load, 250) // debounce ketikan pencarian
+    return () => clearTimeout(t)
+  }, [load])
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Users</h1>
-          <p className="text-sm text-muted-foreground">{total} user terdaftar</p>
-        </div>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader title="Users" subtitle={`${users.length} user ditampilkan`} />
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Cari email atau nama..."
-          className="pl-9"
+      <div className="flex flex-wrap items-center gap-2">
+        <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          placeholder="Cari email atau nama…"
+          className={`${FIELD} max-w-xs py-2.5 text-sm`}
         />
+        <select value={status} onChange={(e) => setStatus(e.target.value)} className={`${FIELD} w-auto py-2.5 text-sm`}>
+          {STATUS_FILTERS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+        <select value={telegram} onChange={(e) => setTelegram(e.target.value)} className={`${FIELD} w-auto py-2.5 text-sm`}>
+          <option value="">Telegram: semua</option>
+          <option value="1">Terhubung</option>
+          <option value="0">Belum terhubung</option>
+        </select>
+        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-cd-line-strong bg-white px-3.5 py-2.5 text-sm font-semibold">
+          <input type="checkbox" checked={expiring} onChange={(e) => setExpiring(e.target.checked)} className="accent-[#00754A]" />
+          Akan habis ≤ 3 hari
+        </label>
       </div>
 
-      {/* Table — desktop */}
-      <div className="hidden md:block">
-        <Card>
-          <CardContent className="p-0">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-xs text-muted-foreground">
-                  <th className="text-left px-4 py-3 font-medium">User</th>
-                  <th className="text-left px-4 py-3 font-medium">Status</th>
-                  <th className="text-left px-4 py-3 font-medium">Telegram</th>
-                  <th className="text-left px-4 py-3 font-medium">Bergabung</th>
-                  <th className="text-left px-4 py-3 font-medium">Ubah status</th>
-                  <th className="text-left px-4 py-3 font-medium">Role</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i} className="border-b">
-                      <td colSpan={6} className="px-4 py-3">
-                        <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
-                      </td>
-                    </tr>
-                  ))
-                ) : users.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-10 text-muted-foreground text-sm">Tidak ada user ditemukan</td></tr>
-                ) : users.map((u) => (
-                  <tr key={u.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <p className="font-medium truncate max-w-[180px]">{u.full_name ?? '—'}</p>
-                      <p className="text-xs text-muted-foreground truncate max-w-[180px]">{u.email}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusColor[u.subscription_status] ?? ''}`}>
-                        {STATUS_NAMES[u.subscription_status] ?? u.subscription_status}
-                      </span>
-                      {u.subscription_status === 'premium' && u.subscription_ends_at && (
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">
-                          s/d {new Date(u.subscription_ends_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={u.telegram_chat_id ? 'default' : 'outline'} className="text-[10px]">
-                        {u.telegram_chat_id ? 'Terhubung' : 'Belum'}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {new Date(u.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusSelect user={u} onChanged={load} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <RoleToggle user={u} onChanged={load} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Cards — mobile */}
-      <div className="md:hidden space-y-2">
-        {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-20 bg-muted rounded-xl animate-pulse" />
-          ))
-        ) : users.map((u) => (
-          <Card key={u.id}>
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{u.full_name ?? '—'}</p>
-                  <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                </div>
-                <RoleToggle user={u} onChanged={load} />
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusColor[u.subscription_status] ?? ''}`}>
-                  {STATUS_NAMES[u.subscription_status] ?? u.subscription_status}
-                </span>
-                <Badge variant={u.telegram_chat_id ? 'default' : 'outline'} className="text-[10px]">
-                  {u.telegram_chat_id ? 'Telegram ✓' : 'Telegram —'}
-                </Badge>
-              </div>
-              <StatusSelect user={u} onChanged={load} />
-            </CardContent>
-          </Card>
-        ))}
+      <div className={`${CARD} overflow-x-auto`}>
+        <table className="w-full min-w-[720px] text-sm">
+          <thead>
+            <tr className="border-b border-cd-line-soft text-left text-xs text-cd-muted-2">
+              <th className="px-5 py-3 font-semibold">User</th>
+              <th className="px-3 py-3 font-semibold">Status</th>
+              <th className="px-3 py-3 font-semibold">Berakhir</th>
+              <th className="px-3 py-3 font-semibold">Telegram</th>
+              <th className="px-3 py-3 font-semibold">Bergabung</th>
+              <th className="px-5 py-3" />
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr><td colSpan={6} className="px-5 py-10 text-center text-cd-muted-2">Memuat…</td></tr>
+            ) : users.length === 0 ? (
+              <tr><td colSpan={6} className="px-5 py-10 text-center text-cd-muted-2">Tidak ada user yang cocok</td></tr>
+            ) : users.map((u) => (
+              <tr key={u.id} className="border-b border-cd-line-soft last:border-0 hover:bg-[#FAFCFB]">
+                <td className="px-5 py-3">
+                  <Link href={`/admin/users/${u.id}`} className="flex flex-col">
+                    <span className="flex items-center gap-1.5 font-semibold text-cd-ink">
+                      {u.full_name ?? '—'}
+                      {u.role === 'admin' && <ShieldCheck className="h-3.5 w-3.5 text-cd-primary" aria-label="Admin" />}
+                    </span>
+                    <span className="text-xs text-cd-muted-2">{u.email}</span>
+                  </Link>
+                </td>
+                <td className="px-3 py-3"><StatusPill status={u.subscription_status} /></td>
+                <td className="px-3 py-3 text-[13px]"><EndsAt iso={u.ends_at} /></td>
+                <td className="px-3 py-3 text-[13px]">
+                  {u.telegram_chat_id ? <span className="font-semibold text-cd-success">● Terhubung</span> : <span className="text-cd-placeholder">Belum</span>}
+                </td>
+                <td className="px-3 py-3 text-[13px] text-cd-muted-2">
+                  {new Date(u.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </td>
+                <td className="px-5 py-3 text-right">
+                  <Link href={`/admin/users/${u.id}`} className="text-[13px] font-semibold text-cd-primary hover:text-cd-primary-hover">
+                    Kelola →
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )

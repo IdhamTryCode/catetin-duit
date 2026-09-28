@@ -4,7 +4,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Check, Download, Info, Lock } from 'lucide-react'
 import { formatIDR } from '@/lib/utils'
-import { BOT_USERNAME, SUBSCRIPTION_PRICE, TRIAL_DURATION_DAYS } from '@/lib/constants'
+import { BOT_USERNAME, TRIAL_DURATION_DAYS } from '@/lib/constants'
+import { getSettings } from '@/lib/settings'
 import { HeroChat } from '@/components/landing/hero-chat'
 import { PersonaTabs } from '@/components/landing/persona-tabs'
 import { Faq } from '@/components/landing/faq'
@@ -96,7 +97,7 @@ export default async function HomePage() {
 
   if (user) redirect('/dashboard')
 
-  const priceFormatted = formatIDR(SUBSCRIPTION_PRICE)
+  const priceFormatted = formatIDR((await getSettings()).premiumPrice)
 
   return (
     <div className="flex min-h-screen flex-col bg-cd-bg text-cd-ink">

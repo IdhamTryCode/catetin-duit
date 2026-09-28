@@ -17,7 +17,9 @@ transaksinya tercatat otomatis lalu tampil di dashboard web.
   (kode berlaku 15 menit, maks 3 per jam, terkunci setelah 5 percobaan gagal).
 - **Langganan:** Trial 7 hari (akses penuh) → Premium Rp 14.999/bulan, dengan
   masa tenggang 3 hari setelah Premium berakhir.
-- **Panel admin:** statistik dan pengelolaan status langganan user.
+- **Panel admin:** detail & aksi per user, catat pembayaran manual, broadcast
+  bot/email, status sistem (webhook, cron, pemakaian), dan pengaturan promo/harga
+  tanpa redeploy.
 
 ## Stack
 
@@ -52,7 +54,7 @@ Akses ditentukan oleh `profiles.subscription_status`:
 | `trial`, `premium`, `grace_period` | Akses penuh | Mencatat |
 | `trial_expired`, `cancelled` | Lihat data; maks 5 transaksi manual/hari, tanpa export & kategori kustom | Menolak dengan pesan perpanjang |
 
-Saat `NEXT_PUBLIC_FREE_PROMO=true`, semua user mendapat akses penuh.
+Saat promo aktif (Admin → Pengaturan, atau env darurat `NEXT_PUBLIC_FREE_PROMO=true`), semua user mendapat akses penuh.
 
 ## Menjalankan secara lokal
 
@@ -86,7 +88,7 @@ Perintah lain: `npm run build`, `npm run lint`.
 | `CRON_SECRET` | ✓ | Otorisasi cron & endpoint setup webhook |
 | `RESEND_API_KEY` | ✓ | Kirim email |
 | `EMAIL_FROM` | ✓ | Pengirim email, domain harus terverifikasi di Resend |
-| `NEXT_PUBLIC_FREE_PROMO` | – | `true` = semua user gratis akses penuh. Ubah → wajib redeploy |
+| `NEXT_PUBLIC_FREE_PROMO` | – | Saklar darurat: `true` = promo selalu aktif. Normalnya `false`; promo diatur di Admin → Pengaturan |
 | `USER_DEFAULT_TIMEZONE` | – | Default `Asia/Jakarta` |
 | `SENTRY_AUTH_TOKEN` | – | Upload source map saat build |
 | `DUITKU_API_KEY`, `DUITKU_MERCHANT_CODE` | – | Hanya jika pembayaran otomatis Duitku diaktifkan |

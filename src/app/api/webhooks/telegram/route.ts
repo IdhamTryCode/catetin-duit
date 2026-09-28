@@ -11,6 +11,7 @@ import {
   handleParsed,
   subscriptionBlocked,
 } from '@/lib/telegram/handlers'
+import { promoActive } from '@/lib/settings'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -89,19 +90,22 @@ async function handleUpdate(chatId: number, text: string, update: TelegramUpdate
   }
 
   const profile = await findProfileByChatId(db, chatId)
+  // subscriptionBlocked() membaca env promo; promo dari Admin → Pengaturan dicek di sini
+  // (dibaca sekali per pesan, hanya jika status user memang diblokir).
+  const blocked = async (p: NonNullable<typeof profile>) => subscriptionBlocked(p) && !(await promoActive())
   if (!profile) {
     return sendMessage(chatId, MSG.notConnected)
   }
 
   if (cmd === '/riwayat') {
     await sendTyping(chatId)
-    if (subscriptionBlocked(profile)) return sendMessage(chatId, MSG.blocked)
+    if (await blocked(profile)) return sendMessage(chatId, MSG.blocked)
     return sendMessage(chatId, await handleHistory(db, profile))
   }
 
   if (cmd === '/ringkasan') {
     await sendTyping(chatId)
-    if (subscriptionBlocked(profile)) return sendMessage(chatId, MSG.blocked)
+    if (await blocked(profile)) return sendMessage(chatId, MSG.blocked)
     return sendMessage(chatId, await handleSummary(db, profile))
   }
 
@@ -110,7 +114,7 @@ async function handleUpdate(chatId: number, text: string, update: TelegramUpdate
     return sendMessage(chatId, `❓ Perintah tidak dikenal.\n\n${MSG.help}`)
   }
 
-  if (subscriptionBlocked(profile)) {
+  if (await blocked(profile)) {
     return sendMessage(chatId, MSG.blocked)
   }
 

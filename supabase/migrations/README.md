@@ -83,3 +83,16 @@ WHERE schemaname = 'public'
 ```
 
 Yang kedua harus mengembalikan 4 baris.
+
+---
+
+## 20260928_app_settings.sql
+
+Membuat tabel `app_settings` untuk halaman **Admin → Pengaturan** (promo +
+tanggal berakhir, harga Premium, masa tenggang) dan status run cron terakhir
+di **Admin → Sistem**. RLS aktif tanpa policy, jadi hanya server (service role)
+yang bisa membaca/menulis.
+
+Sebelum migrasi ini dijalankan aplikasi tetap berjalan normal dengan nilai
+default (env `NEXT_PUBLIC_FREE_PROMO`, harga & masa tenggang dari kode); hanya
+penyimpanan pengaturan yang belum bisa.
