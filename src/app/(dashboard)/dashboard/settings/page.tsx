@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/dashboard/ui'
 import { SettingsForm } from './settings-form'
 
 export default async function SettingsPage() {
@@ -12,28 +12,16 @@ export default async function SettingsPage() {
     .single()
 
   return (
-    <div className="space-y-6 max-w-xl">
-      <div>
-        <h1 className="text-2xl font-bold">Pengaturan</h1>
-        <p className="text-muted-foreground">Kelola profil dan preferensi kamu</p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Profil</CardTitle>
-          <CardDescription>Informasi akun kamu</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SettingsForm
-            initialValues={{
-              full_name: profile?.full_name ?? '',
-              timezone: profile?.timezone ?? 'Asia/Jakarta',
-              telegram_chat_id: profile?.telegram_chat_id ?? null,
-            }}
-            email={profile?.email ?? ''}
-          />
-        </CardContent>
-      </Card>
+    <div className="flex max-w-[640px] flex-col gap-6">
+      <PageHeader title="Pengaturan" subtitle="Kelola profil dan preferensi kamu" />
+      <SettingsForm
+        initialValues={{
+          full_name: profile?.full_name ?? '',
+          timezone: profile?.timezone ?? 'Asia/Jakarta',
+          telegram_chat_id: profile?.telegram_chat_id ?? null,
+        }}
+        email={profile?.email ?? ''}
+      />
     </div>
   )
 }

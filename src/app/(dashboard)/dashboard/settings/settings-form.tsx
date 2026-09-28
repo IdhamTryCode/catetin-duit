@@ -1,18 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button } from '@/components/ui/button'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
-import { updateProfile, disconnectTelegram } from './actions'
 import { toast } from 'sonner'
-import { TIMEZONES, VALID_TIMEZONES, DEFAULT_TIMEZONE } from '@/lib/constants'
+import { updateProfile, disconnectTelegram } from './actions'
+import { BOT_USERNAME, TIMEZONES, VALID_TIMEZONES, DEFAULT_TIMEZONE } from '@/lib/constants'
 import { isValidTimezone } from '@/lib/utils'
+import { FIELD, LABEL } from '@/components/dashboard/modal'
+import { BTN_PRIMARY, BTN_SECONDARY, CARD } from '@/components/dashboard/ui'
 
 const settingsSchema = z.object({
   full_name: z.string().min(2, 'Nama minimal 2 karakter'),
@@ -32,7 +30,7 @@ interface Props {
 
 export function SettingsForm({ email, initialValues }: Props) {
   const [isLoading, setIsLoading] = useState(false)
-  const [isDisconnecting, setIsDisconnecting] = useState(false)
+  const [saved, setSaved] = useState(false)
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
@@ -42,6 +40,7 @@ export function SettingsForm({ email, initialValues }: Props) {
       timezone: isValidTimezone(initialValues.timezone) ? initialValues.timezone : DEFAULT_TIMEZONE,
     },
   })
+  const nameError = form.formState.errors.full_name?.message
 
   async function onSubmit(values: SettingsValues) {
     setIsLoading(true)
@@ -52,10 +51,60 @@ export function SettingsForm({ email, initialValues }: Props) {
     if (result?.error) {
       toast.error(result.error)
     } else {
-      toast.success('Profil berhasil diperbarui')
+      setSaved(true)
     }
     setIsLoading(false)
   }
+
+  return (
+    <>
+      <form onSubmit={form.handleSubmit(onSubmit)} className={`${CARD} flex flex-col gap-[18px] p-6`}>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-base font-bold">Profil</span>
+          <span className="text-sm text-cd-muted-2">Informasi akun kamu</span>
+        </div>
+
+        <div className={LABEL}>
+          Email
+          <div className="rounded-xl bg-cd-bg px-3.5 py-3 text-[15px] font-normal text-cd-muted">{email}</div>
+        </div>
+
+        <label className={LABEL}>
+          Nama Lengkap
+          <input
+            {...form.register('full_name', { onChange: () => setSaved(false) })}
+            aria-invalid={!!nameError}
+            className={`${FIELD} font-normal`}
+          />
+          {nameError && <span className="text-[13px] font-medium text-cd-expense">{nameError}</span>}
+        </label>
+
+        <label className={LABEL}>
+          Zona Waktu
+          <select {...form.register('timezone', { onChange: () => setSaved(false) })} className={`${FIELD} font-normal`}>
+            {TIMEZONES.map((tz) => (
+              <option key={tz.value} value={tz.value}>
+                {tz.value} ({tz.label.split(' ')[0]})
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="flex items-center gap-3">
+          <button type="submit" disabled={isLoading} className={BTN_PRIMARY}>
+            {isLoading ? 'Menyimpan…' : 'Simpan Perubahan'}
+          </button>
+          {saved && <span className="text-[13px] font-semibold text-cd-success">✓ Tersimpan</span>}
+        </div>
+      </form>
+
+      <TelegramCard connected={!!initialValues.telegram_chat_id} />
+    </>
+  )
+}
+
+function TelegramCard({ connected }: { connected: boolean }) {
+  const [isDisconnecting, setIsDisconnecting] = useState(false)
 
   async function handleDisconnect() {
     if (!confirm('Yakin ingin memutuskan koneksi Telegram?')) return
@@ -65,76 +114,30 @@ export function SettingsForm({ email, initialValues }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Email</label>
-            <p className="text-sm">{email}</p>
-          </div>
-
-          <FormField
-            control={form.control}
-            name="full_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nama Lengkap</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="timezone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Zona Waktu</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {TIMEZONES.map((tz) => (
-                      <SelectItem key={tz.value} value={tz.value}>
-                        {tz.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
-          </Button>
-        </form>
-      </Form>
-
-      {initialValues.telegram_chat_id && (
-        <>
-          <Separator />
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Telegram</p>
-            <p className="text-sm text-muted-foreground">Akun Telegram kamu sudah terhubung.</p>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDisconnect}
-              disabled={isDisconnecting}
-            >
-              {isDisconnecting ? 'Memproses...' : 'Putuskan Koneksi Telegram'}
-            </Button>
-          </div>
-        </>
-      )}
+    <div className={`${CARD} flex flex-wrap items-center justify-between gap-4 p-6`}>
+      <div className="flex flex-col gap-1">
+        <span className="text-base font-bold">Telegram</span>
+        {connected ? (
+          <span className="text-sm font-semibold text-cd-success">● Terhubung ke @{BOT_USERNAME}</span>
+        ) : (
+          <span className="text-sm text-cd-muted-2">Belum terhubung</span>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {connected && (
+          <button
+            type="button"
+            onClick={handleDisconnect}
+            disabled={isDisconnecting}
+            className="cursor-pointer rounded-[11px] px-3.5 py-2.5 text-sm font-semibold text-cd-expense hover:bg-[#FDF0F0] disabled:opacity-50"
+          >
+            {isDisconnecting ? 'Memproses…' : 'Putuskan'}
+          </button>
+        )}
+        <Link href="/dashboard/telegram" className={BTN_SECONDARY}>
+          Kelola
+        </Link>
+      </div>
     </div>
   )
 }
