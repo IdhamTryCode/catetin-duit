@@ -1,10 +1,9 @@
 import { createClient } from '@/utils/supabase/server'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import Link from 'next/link'
-import { Download, Plus } from 'lucide-react'
-import { type TransactionRow } from '@/types'
+import { type Category, type TransactionRow } from '@/types'
+import { BTN_SECONDARY, CARD, PageHeader } from '@/components/dashboard/ui'
 import { TransactionsTable } from './transactions-table'
+import { AddTransaction } from './add-transaction'
 import { parsePageParam } from '@/lib/utils'
 import { PAGE_SIZE, resolvePlan } from '@/lib/constants'
 
@@ -41,77 +40,72 @@ export default async function TransactionsPage({
 
   if (typeFilter) query = query.eq('type', typeFilter)
 
-  const { data, count } = await query
+  // Kategori untuk modal Tambah Manual: bawaan (user_id NULL) + milik user
+  const [{ data, count }, { data: categoryRows }] = await Promise.all([
+    query,
+    supabase
+      .from('categories')
+      .select('id, user_id, name, type, icon, color, is_default, created_at')
+      .or(`user_id.eq.${user!.id},user_id.is.null`)
+      .order('name'),
+  ])
   const transactions = (data ?? []) as TransactionRow[]
+  const categories = (categoryRows ?? []) as Category[]
+
+  const filters = [
+    { href: '/dashboard/transactions', label: 'Semua', active: !typeFilter },
+    { href: '/dashboard/transactions?type=income', label: 'Pemasukan', active: typeFilter === 'income' },
+    { href: '/dashboard/transactions?type=expense', label: 'Pengeluaran', active: typeFilter === 'expense' },
+  ]
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold">Transaksi</h1>
-          <p className="text-sm text-muted-foreground">Riwayat dan kelola semua transaksi</p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Export CSV — hanya untuk akses penuh (trial/premium) */}
-          {canExport ? (
-            <Button asChild variant="outline" size="sm" className="hidden sm:flex gap-1.5">
-              <a href="/api/export/csv" download>
-                <Download className="h-3.5 w-3.5" />
-                Export CSV
-              </a>
-            </Button>
-          ) : (
-            <Button asChild variant="outline" size="sm" className="hidden sm:flex gap-1.5 text-muted-foreground">
-              <Link href="/dashboard/subscription">
-                <Download className="h-3.5 w-3.5" />
-                Export CSV
-              </Link>
-            </Button>
-          )}
-          <Button asChild size="sm">
-            <Link href="/dashboard/transactions/new" className="flex items-center gap-1.5">
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Tambah Manual</span>
-              <span className="sm:hidden">Tambah</span>
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-3 pt-4 px-4">
-          <div className="flex items-center justify-between gap-2">
-            {/* Filter tabs */}
-            <div className="flex items-center gap-1.5">
-              <Button asChild variant={!typeFilter ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-3">
-                <Link href="/dashboard/transactions">Semua</Link>
-              </Button>
-              <Button asChild variant={typeFilter === 'income' ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-3">
-                <Link href="/dashboard/transactions?type=income">Pemasukan</Link>
-              </Button>
-              <Button asChild variant={typeFilter === 'expense' ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-3">
-                <Link href="/dashboard/transactions?type=expense">Pengeluaran</Link>
-              </Button>
-            </div>
-            {/* Export CSV mobile — ikon saja */}
-            {canExport && (
-              <a href="/api/export/csv" download className="sm:hidden p-1.5 rounded-md border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                <Download className="h-4 w-4" />
-              </a>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Transaksi"
+        subtitle="Riwayat dan kelola semua transaksi"
+        actions={
+          <>
+            {/* Export CSV — hanya untuk akses penuh (trial/premium) */}
+            {canExport ? (
+              <a href="/api/export/csv" download className={BTN_SECONDARY}>↓ Export CSV</a>
+            ) : (
+              <Link href="/dashboard/subscription" className={`${BTN_SECONDARY} text-cd-muted-2`}>↓ Export CSV</Link>
             )}
+            <AddTransaction categories={categories} />
+          </>
+        }
+      />
+
+      <div className={`${CARD} overflow-hidden`}>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-cd-line-soft px-5 py-4">
+          <div className="flex gap-1 rounded-[11px] bg-cd-bg p-1">
+            {filters.map((f) => (
+              <Link
+                key={f.label}
+                href={f.href}
+                aria-current={f.active ? 'page' : undefined}
+                className={
+                  f.active
+                    ? 'rounded-lg bg-white px-3.5 py-2 text-[13px] font-bold text-cd-ink shadow-[0_1px_2px_rgba(6,20,13,.1)]'
+                    : 'rounded-lg px-3.5 py-2 text-[13px] font-semibold text-cd-muted-2 hover:text-cd-ink'
+                }
+              >
+                {f.label}
+              </Link>
+            ))}
           </div>
-        </CardHeader>
-        <CardContent className="px-0 pb-0 md:px-6 md:pb-6">
-          <TransactionsTable
-            transactions={transactions}
-            timezone={timezone}
-            totalCount={count ?? 0}
-            page={page}
-            pageSize={pageSize}
-          />
-        </CardContent>
-      </Card>
+          <span className="text-[13px] text-cd-muted-2">{count ?? 0} transaksi</span>
+        </div>
+        <TransactionsTable
+          transactions={transactions}
+          timezone={timezone}
+          totalCount={count ?? 0}
+          page={page}
+          pageSize={pageSize}
+          typeFilter={typeFilter}
+          categories={categories}
+        />
+      </div>
     </div>
   )
 }

@@ -4,12 +4,11 @@ import { useTransition } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { formatInTimeZone } from 'date-fns-tz'
-import { Receipt, Bot } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { type TransactionRow, getJoinedCategory } from '@/types'
+import { id as idLocale } from 'date-fns/locale'
+import { type Category, type TransactionRow, getJoinedCategory } from '@/types'
+import { BTN_SECONDARY, TxIcon } from '@/components/dashboard/ui'
 import { deleteTransaction } from './actions'
+import { AddTransaction } from './add-transaction'
 import { formatIDR } from '@/lib/utils'
 
 interface Props {
@@ -18,11 +17,16 @@ interface Props {
   totalCount: number
   page: number
   pageSize: number
+  typeFilter?: string
+  categories: Category[]
 }
 
-export function TransactionsTable({ transactions, timezone, totalCount, page, pageSize }: Props) {
+const SOURCE_LABEL: Record<string, string> = { telegram: 'Telegram', web: 'Manual', import: 'Import' }
+
+export function TransactionsTable({ transactions, timezone, totalCount, page, pageSize, typeFilter, categories }: Props) {
   const [isPending, startTransition] = useTransition()
   const totalPages = Math.ceil(totalCount / pageSize)
+  const pageHref = (p: number) => `?${typeFilter ? `type=${typeFilter}&` : ''}page=${p}`
 
   function handleDelete(id: string) {
     startTransition(async () => {
@@ -35,24 +39,12 @@ export function TransactionsTable({ transactions, timezone, totalCount, page, pa
 
   if (transactions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center mb-4">
-          <Receipt className="h-7 w-7 text-muted-foreground" />
-        </div>
-        <p className="text-sm font-semibold">Belum ada transaksi</p>
-        <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
-          Mulai catat via bot Telegram atau tambah manual
-        </p>
-        <div className="flex gap-2 mt-4">
-          <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/telegram">
-              <Bot className="h-3.5 w-3.5 mr-1.5" />
-              Hubungkan Telegram
-            </Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link href="/dashboard/transactions/new">+ Tambah Manual</Link>
-          </Button>
+      <div className="flex flex-col items-center gap-2 px-6 py-14 text-center">
+        <span className="text-base font-bold">Belum ada transaksi</span>
+        <span className="max-w-[320px] text-sm text-cd-muted-2">Mulai catat via bot Telegram atau tambah manual</span>
+        <div className="mt-2.5 flex flex-wrap justify-center gap-2">
+          <Link href="/dashboard/telegram" className={BTN_SECONDARY}>Hubungkan Telegram</Link>
+          <AddTransaction categories={categories} />
         </div>
       </div>
     )
@@ -60,79 +52,70 @@ export function TransactionsTable({ transactions, timezone, totalCount, page, pa
 
   return (
     <div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Tanggal</TableHead>
-            <TableHead>Deskripsi</TableHead>
-            <TableHead>Kategori</TableHead>
-            <TableHead className="hidden md:table-cell">Sumber</TableHead>
-            <TableHead className="text-right">Jumlah</TableHead>
-            <TableHead className="text-right">Aksi</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {transactions.map((tx) => {
-            const category = getJoinedCategory(tx.categories)
-            return (
-              <TableRow key={tx.id}>
-                <TableCell className="text-sm">
-                  {formatInTimeZone(new Date(tx.transaction_date), timezone, 'dd MMM yyyy')}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span>{tx.description ?? '-'}</span>
-                    {tx.needs_review && (
-                      <Badge variant="destructive" className="text-xs">Review</Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-sm">
-                  {category ? `${category.icon ?? ''} ${category.name}`.trim() : '-'}
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  <Badge variant="outline" className="text-xs capitalize">{tx.source}</Badge>
-                </TableCell>
-                <TableCell className="text-right font-medium tabular-nums">
-                  <span className={tx.type === 'income' ? 'text-green-600' : 'text-red-600'}>
-                    {tx.type === 'income' ? '+' : '-'}{formatIDR(tx.amount)}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button asChild variant="ghost" size="sm">
-                      <Link href={`/dashboard/transactions/${tx.id}/edit`}>Edit</Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      disabled={isPending}
-                      onClick={() => handleDelete(tx.id)}
-                    >
-                      Hapus
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
+      {transactions.map((tx) => {
+        const category = getJoinedCategory(tx.categories)
+        const income = tx.type === 'income'
+        const catName = category?.name ?? 'Lainnya'
+        return (
+          <div key={tx.id} className="flex items-center gap-3.5 border-b border-cd-line-soft px-5 py-3.5 last:border-b-0 hover:bg-[#FAFCFB]">
+            <TxIcon label={catName} income={income} />
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <span className="truncate">{tx.description ?? catName}</span>
+                {tx.needs_review && (
+                  <span className="flex-shrink-0 rounded-full bg-[#FFF8EB] px-2 py-0.5 text-[11px] font-bold text-[#6B4A0E]">Review</span>
+                )}
+              </span>
+              <span className="truncate text-[13px] text-cd-muted-2">
+                {catName} · {formatInTimeZone(new Date(tx.transaction_date), timezone, 'd MMM yyyy', { locale: idLocale })} · via{' '}
+                {SOURCE_LABEL[tx.source ?? ''] ?? tx.source}
+              </span>
+            </div>
+            <span className={`whitespace-nowrap text-[15px] font-bold tabular-nums ${income ? 'text-cd-primary' : 'text-cd-expense'}`}>
+              {income ? '+' : '−'}{formatIDR(tx.amount)}
+            </span>
+            <div className="flex flex-shrink-0">
+              <Link
+                href={`/dashboard/transactions/${tx.id}/edit`}
+                className="rounded-lg px-2 py-1.5 text-[13px] font-semibold text-cd-placeholder hover:bg-cd-bg hover:text-cd-ink"
+              >
+                Edit
+              </Link>
+              <button
+                type="button"
+                title="Hapus"
+                disabled={isPending}
+                onClick={() => handleDelete(tx.id)}
+                className="cursor-pointer rounded-lg px-2 py-1.5 text-[13px] font-semibold text-cd-placeholder hover:bg-[#FDF0F0] hover:text-cd-expense disabled:opacity-50"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        )
+      })}
 
-      <div className="flex items-center justify-between mt-4">
-        <p className="text-sm text-muted-foreground">
-          {totalCount} transaksi · Halaman {page} dari {totalPages || 1}
-        </p>
-        <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm" aria-disabled={page <= 1} className={page <= 1 ? 'pointer-events-none opacity-40' : ''}>
-            <Link href={`?page=${page - 1}`}>Sebelumnya</Link>
-          </Button>
-          <Button asChild variant="outline" size="sm" aria-disabled={page >= totalPages} className={page >= totalPages ? 'pointer-events-none opacity-40' : ''}>
-            <Link href={`?page=${page + 1}`}>Selanjutnya</Link>
-          </Button>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-3 border-t border-cd-line-soft px-5 py-4">
+          <p className="m-0 text-[13px] text-cd-muted-2">Halaman {page} dari {totalPages}</p>
+          <div className="flex gap-2">
+            <Link
+              href={pageHref(page - 1)}
+              aria-disabled={page <= 1}
+              className={`${BTN_SECONDARY} py-2 ${page <= 1 ? 'pointer-events-none opacity-40' : ''}`}
+            >
+              Sebelumnya
+            </Link>
+            <Link
+              href={pageHref(page + 1)}
+              aria-disabled={page >= totalPages}
+              className={`${BTN_SECONDARY} py-2 ${page >= totalPages ? 'pointer-events-none opacity-40' : ''}`}
+            >
+              Selanjutnya
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
