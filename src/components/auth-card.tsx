@@ -1,115 +1,94 @@
 import { ReactNode } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
+import { Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+/** Kelas input auth (redesign 2026): 15px, 13×14, radius 12, fokus hijau. */
+export const AUTH_INPUT =
+  'h-auto rounded-xl border-cd-line-strong bg-white px-3.5 py-[13px] text-[15px] text-cd-ink md:text-[15px] placeholder:text-cd-placeholder focus-visible:border-cd-primary focus-visible:ring-[3px] focus-visible:ring-[rgba(0,117,74,.15)]'
+
+/** Tombol submit utama di halaman auth. */
+export const AUTH_SUBMIT =
+  'mt-1 h-auto w-full rounded-xl bg-cd-primary p-3.5 text-[15px] font-bold text-white hover:bg-cd-primary-hover'
+
+/** Kotak error di atas form. */
+export const AUTH_ERROR = 'rounded-xl border border-[#F0C8C8] bg-[#FDF0F0] px-3.5 py-2.5 text-sm text-[#8A1F1F]'
 
 interface AuthCardProps {
   title: string
   description?: string
   children: ReactNode
   footer?: ReactNode
+  /** Tampilkan switch Masuk / Daftar (dua route, ditata seperti segmented control). */
+  tab?: 'login' | 'register'
 }
 
+const TABS = [
+  { key: 'login', href: '/login', label: 'Masuk' },
+  { key: 'register', href: '/register', label: 'Daftar' },
+] as const
+
 /**
- * Immersive auth wrapper — rich dark-green gradient background with
- * animated floating orbs and a frosted-glass card overlay.
+ * Layout auth dua kolom: panel gelap berisi pesan produk di kiri,
+ * form di kanan. Menumpuk jadi satu kolom di layar sempit.
  */
-export function AuthCard({ title, description, children, footer }: AuthCardProps) {
+export function AuthCard({ title, description, children, footer, tab }: AuthCardProps) {
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        background:
-          'linear-gradient(135deg, oklch(0.20 0.07 163) 0%, oklch(0.13 0.032 162) 50%, oklch(0.09 0.02 165) 100%)',
-      }}
-    >
-      {/* ── Animated background orbs ──────────────────────────── */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
-        {/* Top-left large orb */}
-        <div
-          className="absolute -top-[18%] -left-[12%] h-[580px] w-[580px] rounded-full animate-float"
-          style={{
-            background:
-              'radial-gradient(circle, oklch(0.48 0.128 162 / 0.28) 0%, transparent 65%)',
-          }}
-        />
-        {/* Bottom-right orb */}
-        <div
-          className="absolute -bottom-[22%] -right-[10%] h-[520px] w-[520px] rounded-full animate-float-delayed"
-          style={{
-            background:
-              'radial-gradient(circle, oklch(0.65 0.155 162 / 0.20) 0%, transparent 65%)',
-          }}
-        />
-        {/* Mid-right accent orb */}
-        <div
-          className="absolute top-[38%] right-[12%] h-[300px] w-[300px] rounded-full animate-float-slow"
-          style={{
-            background:
-              'radial-gradient(circle, oklch(0.72 0.14 162 / 0.14) 0%, transparent 70%)',
-          }}
-        />
-        {/* Subtle noise grain overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-            backgroundSize: '200px 200px',
-          }}
-        />
+    <div className="grid min-h-screen bg-cd-bg text-cd-ink [grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr))]">
+      <div className="flex flex-col justify-between gap-10 bg-cd-dark p-8 text-white sm:p-10">
+        <Link href="/" className="flex items-center gap-2.5 text-white">
+          <Image src="/logo.png" alt="" width={32} height={32} className="h-8 w-8 rounded-[9px]" />
+          <span className="text-[17px] font-bold">Catetin Duit</span>
+        </Link>
+        <div className="flex max-w-[420px] flex-col gap-7">
+          <h2 className="m-0 text-[clamp(28px,3vw,38px)] font-extrabold leading-[1.12] tracking-[-.025em] text-balance">
+            Catat keuangan cukup kirim chat ke Telegram
+          </h2>
+          <div className="flex flex-col gap-2" aria-hidden>
+            <span className="self-end rounded-[18px_18px_4px_18px] bg-cd-primary px-3.5 py-2.5 text-[15px]">beli kopi 25rb</span>
+            <div className="flex flex-col gap-0.5 self-start rounded-[18px_18px_18px_4px] bg-cd-dark-2 px-3.5 py-2.5">
+              <span className="flex items-center gap-1 text-xs font-bold text-cd-accent-text">
+                <Check className="h-3 w-3" strokeWidth={3} /> Tercatat! Pengeluaran
+              </span>
+              <span className="text-base font-bold">Rp 25.000</span>
+              <span className="text-xs text-cd-on-dark-3">Makanan &amp; Minuman</span>
+            </div>
+          </div>
+        </div>
+        <span className="text-[13px] text-cd-on-dark-3">Data terenkripsi &amp; aman</span>
       </div>
 
-      {/* ── Glass card ────────────────────────────────────────── */}
-      <div className="relative w-full max-w-[420px] animate-fade-in-up">
-        <div
-          className="rounded-2xl overflow-hidden"
-          style={{
-            background: 'rgba(255, 255, 255, 0.93)',
-            backdropFilter: 'blur(28px)',
-            WebkitBackdropFilter: 'blur(28px)',
-            boxShadow:
-              '0 32px 80px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.55) inset',
-          }}
-        >
-          {/* Card body */}
-          <div className="px-7 pt-8 pb-6 space-y-5">
-            {/* Logo */}
-            <div className="flex justify-center">
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center flex-shrink-0"
-                  style={{ boxShadow: '0 4px 18px oklch(0.48 0.128 162 / 0.45)' }}
+      <div className="flex items-center justify-center px-6 py-10">
+        <div className="flex w-full max-w-[400px] flex-col gap-6">
+          {tab && (
+            <nav className="flex rounded-xl bg-cd-tint p-1" aria-label="Masuk atau daftar">
+              {TABS.map((t) => (
+                <Link
+                  key={t.key}
+                  href={t.href}
+                  aria-current={t.key === tab ? 'page' : undefined}
+                  className={cn(
+                    'flex-1 rounded-[9px] p-2.5 text-center text-sm',
+                    t.key === tab
+                      ? 'bg-white font-bold text-cd-ink shadow-[0_1px_2px_rgba(6,20,13,.1)]'
+                      : 'font-semibold text-cd-muted-2 hover:text-cd-ink',
+                  )}
                 >
-                  <Image
-                    src="/logo.png"
-                    alt="Catetin Duit"
-                    width={24}
-                    height={24}
-                    className="rounded-md"
-                  />
-                </div>
-                <span className="text-xl font-bold tracking-tight text-foreground">
-                  Catetin Duit
-                </span>
-              </div>
-            </div>
+                  {t.label}
+                </Link>
+              ))}
+            </nav>
+          )}
 
-            {/* Heading */}
-            <div className="text-center space-y-1.5">
-              <h1 className="text-2xl font-bold text-foreground">{title}</h1>
-              {description && (
-                <p className="text-sm text-muted-foreground">{description}</p>
-              )}
-            </div>
-
-            {/* Slot: form content */}
-            <div className="space-y-4">{children}</div>
+          <div className="flex flex-col gap-1.5">
+            <h1 className="m-0 text-[28px] font-extrabold tracking-[-.02em]">{title}</h1>
+            {description && <p className="m-0 text-[15px] text-cd-muted-2">{description}</p>}
           </div>
 
-          {/* Footer */}
-          {footer && (
-            <div className="px-7 pt-4 pb-7 text-center text-sm border-t border-border/40">
-              {footer}
-            </div>
-          )}
+          {children}
+
+          {footer && <div className="text-center text-sm">{footer}</div>}
         </div>
       </div>
     </div>

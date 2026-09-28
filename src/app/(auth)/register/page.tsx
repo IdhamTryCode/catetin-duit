@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { Eye, EyeOff } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -11,7 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { OAuthButtons } from '../oauth-buttons'
 import { signup } from '../actions'
-import { AuthCard } from '@/components/auth-card'
+import { AUTH_ERROR, AUTH_INPUT, AUTH_SUBMIT, AuthCard } from '@/components/auth-card'
+import { cn } from '@/lib/utils'
 
 const registerSchema = z.object({
   full_name: z.string().min(2, 'Nama minimal 2 karakter'),
@@ -30,7 +30,6 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
 
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
@@ -56,51 +55,27 @@ export default function RegisterPage() {
   }
 
   return (
-    <AuthCard
-      title="Buat akun baru"
-      description="Trial gratis 7 hari — tidak perlu kartu kredit"
-      footer={
-        <>
-          <span className="text-muted-foreground">Sudah punya akun?</span>
-          <Link href="/login" className="text-primary hover:underline ml-1 font-medium">
-            Masuk di sini
-          </Link>
-        </>
-      }
-    >
+    <AuthCard tab="register" title="Buat akun baru" description="Trial gratis 7 hari, tidak perlu kartu kredit">
       {success && (
-        <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 px-4 py-3 rounded-lg text-center space-y-1">
+        <div className="space-y-1 rounded-xl border border-cd-line-strong bg-cd-tint px-4 py-3 text-center text-sm text-cd-primary-hover">
           <p className="font-semibold">Pendaftaran berhasil! 🎉</p>
-          <p className="text-emerald-600">Cek email kamu untuk mengkonfirmasi akun, lalu login.</p>
+          <p>Cek email kamu untuk mengkonfirmasi akun, lalu login.</p>
         </div>
       )}
-
-      {/* Feature strip */}
-      <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground py-1">
-        <span>✓ 7 hari gratis</span>
-        <span>·</span>
-        <span>✓ Tanpa kartu kredit</span>
-        <span>·</span>
-        <span>✓ Cancel kapan saja</span>
-      </div>
 
       <OAuthButtons mode="register" />
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {error && (
-            <div className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
-              {error}
-            </div>
-          )}
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          {error && <div className={AUTH_ERROR}>{error}</div>}
           <FormField
             control={form.control}
             name="full_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nama Lengkap</FormLabel>
+                <FormLabel className="text-sm font-semibold">Nama Lengkap</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nama kamu" {...field} />
+                  <Input placeholder="Nama kamu" className={AUTH_INPUT} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -111,9 +86,9 @@ export default function RegisterPage() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel className="text-sm font-semibold">Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="kamu@email.com" type="email" {...field} />
+                  <Input placeholder="nama@email.com" type="email" className={AUTH_INPUT} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -124,23 +99,22 @@ export default function RegisterPage() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel className="text-sm font-semibold">Password</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
-                      placeholder="Min. 8 karakter"
+                      placeholder="Minimal 8 karakter"
                       type={showPassword ? 'text' : 'password'}
-                      className="pr-10"
+                      className={cn(AUTH_INPUT, 'pr-[72px]')}
                       {...field}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      tabIndex={-1}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer p-1.5 text-[13px] font-semibold text-cd-muted-2 hover:text-cd-ink"
                       aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? 'Sembunyi' : 'Lihat'}
                     </button>
                   </div>
                 </FormControl>
@@ -153,35 +127,27 @@ export default function RegisterPage() {
             name="confirm_password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Konfirmasi Password</FormLabel>
+                <FormLabel className="text-sm font-semibold">Konfirmasi Password</FormLabel>
                 <FormControl>
-                  <div className="relative">
-                    <Input
-                      placeholder="Ulangi password"
-                      type={showConfirm ? 'text' : 'password'}
-                      className="pr-10"
-                      {...field}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirm((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      tabIndex={-1}
-                      aria-label={showConfirm ? 'Sembunyikan password' : 'Tampilkan password'}
-                    >
-                      {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+                  <Input placeholder="Ulangi password" type={showPassword ? 'text' : 'password'} className={AUTH_INPUT} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className={AUTH_SUBMIT} disabled={isLoading}>
             {isLoading ? 'Memproses...' : 'Daftar Sekarang'}
           </Button>
         </form>
       </Form>
+
+      <div className="flex flex-wrap justify-center gap-3.5 text-[13px] text-cd-muted-2">
+        {['7 hari gratis', 'Tanpa kartu kredit', 'Cancel kapan saja'].map((t) => (
+          <span key={t} className="flex items-center gap-1">
+            <Check className="h-3.5 w-3.5" /> {t}
+          </span>
+        ))}
+      </div>
     </AuthCard>
   )
 }

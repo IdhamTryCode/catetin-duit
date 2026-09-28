@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { signInWithGoogle, signInWithGitHub } from './actions'
 
 interface OAuthButtonsProps {
@@ -24,10 +23,12 @@ const GitHubIcon = () => (
   </svg>
 )
 
+const OAUTH_BUTTON =
+  'h-auto gap-2 rounded-xl border-cd-line-strong bg-white p-3 text-sm font-semibold text-cd-ink hover:border-cd-primary hover:bg-white'
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function OAuthButtons({ mode }: OAuthButtonsProps) {
   const [loadingProvider, setLoadingProvider] = useState<'google' | 'github' | null>(null)
-
-  const label = mode === 'login' ? 'Masuk' : 'Daftar'
 
   async function handleGoogle() {
     setLoadingProvider('google')
@@ -45,12 +46,12 @@ export function OAuthButtons({ mode }: OAuthButtonsProps) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5">
         <Button
           variant="outline"
           onClick={handleGoogle}
           disabled={isLoading}
-          className="gap-2"
+          className={OAUTH_BUTTON}
         >
           {loadingProvider === 'google' ? (
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -63,7 +64,7 @@ export function OAuthButtons({ mode }: OAuthButtonsProps) {
           variant="outline"
           onClick={handleGitHub}
           disabled={isLoading}
-          className="gap-2"
+          className={OAUTH_BUTTON}
         >
           {loadingProvider === 'github' ? (
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -74,10 +75,10 @@ export function OAuthButtons({ mode }: OAuthButtonsProps) {
         </Button>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Separator className="flex-1" />
-        <span className="text-xs text-muted-foreground">atau {label} dengan email</span>
-        <Separator className="flex-1" />
+      <div className="flex items-center gap-3 text-[13px] text-cd-placeholder">
+        <span className="h-px flex-1 bg-cd-line" />
+        atau dengan email
+        <span className="h-px flex-1 bg-cd-line" />
       </div>
     </>
   )

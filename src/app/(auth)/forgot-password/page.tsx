@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { forgotPassword } from '../actions'
 import { CheckCircle2 } from 'lucide-react'
-import { AuthCard } from '@/components/auth-card'
+import { AUTH_ERROR, AUTH_INPUT, AUTH_SUBMIT, AuthCard } from '@/components/auth-card'
 
 export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
       title="Lupa Password"
       description="Masukkan email kamu, kami akan kirim link untuk reset password"
       footer={
-        <Link href="/login" className="text-primary hover:underline mx-auto">
+        <Link href="/login" className="font-semibold text-cd-primary hover:text-cd-primary-hover">
           Kembali ke halaman masuk
         </Link>
       }
@@ -52,23 +52,24 @@ export default function ForgotPasswordPage() {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
+            <div className={AUTH_ERROR}>
               {error}
             </div>
           )}
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">Email</label>
+            <label htmlFor="email" className="text-sm font-semibold">Email</label>
             <Input
               id="email"
               name="email"
               type="email"
-              placeholder="kamu@email.com"
+              placeholder="nama@email.com"
+              className={AUTH_INPUT}
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className={AUTH_SUBMIT} disabled={isLoading}>
             {isLoading ? 'Mengirim...' : 'Kirim Link Reset Password'}
           </Button>
         </form>
