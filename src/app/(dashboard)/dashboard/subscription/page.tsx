@@ -63,8 +63,10 @@ export default async function SubscriptionPage() {
     : isTrial
       ? { name: 'Trial', desc: `Trial gratis berakhir ${fmt(profile?.trial_ends_at)}`, pill: 'Aktif' }
       : {
-          name: 'Trial berakhir',
-          desc: 'Upgrade ke Premium untuk lanjut mencatat via Telegram. Datamu tetap aman dan bisa dilihat.',
+          name: status === 'cancelled' ? 'Langganan berakhir' : 'Trial berakhir',
+          desc: status === 'cancelled'
+            ? 'Premium kamu sudah berakhir. Perpanjang untuk lanjut mencatat via Telegram. Datamu tetap aman dan bisa dilihat.'
+            : 'Upgrade ke Premium untuk lanjut mencatat via Telegram. Datamu tetap aman dan bisa dilihat.',
           pill: 'Berakhir',
         }
 
@@ -144,7 +146,7 @@ export default async function SubscriptionPage() {
               className="flex items-center justify-center gap-2 rounded-xl bg-cd-primary p-3 text-sm font-bold text-white hover:bg-cd-primary-hover"
             >
               <MessageCircle className="h-4 w-4" />
-              Upgrade via WhatsApp
+              {status === 'cancelled' ? 'Perpanjang via WhatsApp' : 'Upgrade via WhatsApp'}
             </a>
           )}
         </div>
