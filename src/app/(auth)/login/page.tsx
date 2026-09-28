@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { OAuthButtons } from '../oauth-buttons'
-import { login } from '../actions'
+import { login, resendConfirmation } from '../actions'
 import { AUTH_ERROR, AUTH_INPUT, AUTH_SUBMIT, AuthCard } from '@/components/auth-card'
 import { cn } from '@/lib/utils'
 
@@ -24,6 +25,24 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null)
+  const [resending, setResending] = useState(false)
+
+  // Link konfirmasi yang gagal/kedaluwarsa diarahkan ke /login?error=email_confirm_failed
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('error') === 'email_confirm_failed') {
+      setError('Link konfirmasi tidak valid atau sudah kedaluwarsa. Masuk dengan email-mu untuk meminta link baru.')
+    }
+  }, [])
+
+  async function resend() {
+    if (!unconfirmedEmail) return
+    setResending(true)
+    const res = await resendConfirmation(unconfirmedEmail)
+    setResending(false)
+    if (res.error) toast.error(res.error)
+    else toast.success(`Link konfirmasi dikirim ulang ke ${unconfirmedEmail}`)
+  }
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -39,6 +58,7 @@ export default function LoginPage() {
     const result = await login(formData)
     if (result?.error) {
       setError(result.error)
+      setUnconfirmedEmail(result.unconfirmed ? values.email : null)
       setIsLoading(false)
     }
   }
@@ -49,7 +69,21 @@ export default function LoginPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          {error && <div className={AUTH_ERROR}>{error}</div>}
+          {error && (
+            <div className={AUTH_ERROR}>
+              {error}
+              {unconfirmedEmail && (
+                <button
+                  type="button"
+                  onClick={resend}
+                  disabled={resending}
+                  className="mt-1.5 block cursor-pointer font-semibold underline disabled:opacity-60"
+                >
+                  {resending ? 'Mengirim…' : 'Kirim ulang email konfirmasi'}
+                </button>
+              )}
+            </div>
+          )}
           <FormField
             control={form.control}
             name="email"

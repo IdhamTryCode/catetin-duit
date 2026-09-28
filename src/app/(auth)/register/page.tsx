@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { OAuthButtons } from '../oauth-buttons'
 import { signup } from '../actions'
+import { CheckEmail } from '../check-email'
 import { AUTH_ERROR, AUTH_INPUT, AUTH_SUBMIT, AuthCard } from '@/components/auth-card'
 import { cn } from '@/lib/utils'
 
@@ -28,7 +29,7 @@ type RegisterValues = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const [sentTo, setSentTo] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
 
   const form = useForm<RegisterValues>({
@@ -44,25 +45,15 @@ export default function RegisterPage() {
     formData.append('email', values.email)
     formData.append('password', values.password)
     const result = await signup(formData)
-    if (result?.error) {
-      setError(result.error)
-      setIsLoading(false)
-    } else {
-      // Signup berhasil — tampilkan pesan konfirmasi email
-      setSuccess(true)
-      setIsLoading(false)
-    }
+    setIsLoading(false)
+    if (result?.error) setError(result.error)
+    else if (result?.needsConfirmation) setSentTo(result.email)
   }
+
+  if (sentTo) return <CheckEmail email={sentTo} onReset={() => { setSentTo(null); form.reset() }} />
 
   return (
     <AuthCard tab="register" title="Buat akun baru" description="Trial gratis 7 hari, tidak perlu kartu kredit">
-      {success && (
-        <div className="space-y-1 rounded-xl border border-cd-line-strong bg-cd-tint px-4 py-3 text-center text-sm text-cd-primary-hover">
-          <p className="font-semibold">Pendaftaran berhasil! 🎉</p>
-          <p>Cek email kamu untuk mengkonfirmasi akun, lalu login.</p>
-        </div>
-      )}
-
       <OAuthButtons mode="register" />
 
       <Form {...form}>
