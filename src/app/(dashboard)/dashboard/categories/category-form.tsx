@@ -1,21 +1,18 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
+import { FIELD, LABEL } from '@/components/dashboard/modal'
+import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/dashboard/ui'
 import { createCategory, updateCategory } from './actions'
 import { type Category } from '@/types'
 
-const SUGGESTED_ICONS = ['🍔', '🚗', '🏠', '💊', '📚', '👗', '✈️', '🎮', '💰', '📦', '💸', '🎁', '⚡', '📱', '🛒', '🏋️', '☕', '🎵']
+const TYPES = [
+  { v: 'expense', label: 'Pengeluaran', color: 'text-cd-expense' },
+  { v: 'income', label: 'Pemasukan', color: 'text-cd-primary' },
+  { v: 'both', label: 'Keduanya', color: 'text-cd-ink' },
+]
 
 interface Props {
   /** If provided, renders in edit mode */
@@ -27,103 +24,71 @@ interface Props {
 export function CategoryForm({ initialValues, onSuccess, onCancel }: Props) {
   const isEdit = !!initialValues
   const [isPending, startTransition] = useTransition()
-  const [icon, setIcon] = useState(initialValues?.icon ?? '')
   const [type, setType] = useState<string>(initialValues?.type ?? 'expense')
-  const formRef = useRef<HTMLFormElement>(null)
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
 
     startTransition(async () => {
-      const result = isEdit
-        ? await updateCategory(formData)
-        : await createCategory(formData)
+      const result = isEdit ? await updateCategory(formData) : await createCategory(formData)
 
       if (result?.error) {
         toast.error(result.error)
       } else {
         toast.success(isEdit ? 'Kategori berhasil diperbarui' : 'Kategori berhasil ditambahkan')
-        formRef.current?.reset()
-        setIcon('')
         onSuccess?.()
       }
     })
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-[18px]">
       {isEdit && <input type="hidden" name="id" value={initialValues.id} />}
+      {/* Ikon lama dipertahankan saat edit (form baru tidak lagi memilih ikon) */}
+      <input type="hidden" name="icon" value={initialValues?.icon ?? ''} />
+      <input type="hidden" name="type" value={type} />
 
-      {/* Nama */}
-      <div className="space-y-1.5">
-        <Label htmlFor="name">Nama Kategori</Label>
-        <Input
-          id="name"
+      <div className="flex gap-1 rounded-[11px] bg-cd-bg p-1" role="radiogroup" aria-label="Jenis kategori">
+        {TYPES.map((t) => (
+          <button
+            key={t.v}
+            type="button"
+            role="radio"
+            aria-checked={type === t.v}
+            onClick={() => setType(t.v)}
+            className={cn(
+              'flex-1 cursor-pointer rounded-lg p-[9px] text-sm',
+              type === t.v ? `bg-white font-bold shadow-[0_1px_2px_rgba(6,20,13,.1)] ${t.color}` : 'font-semibold text-cd-muted-2',
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <label className={LABEL}>
+        Nama Kategori
+        <input
           name="name"
-          placeholder="contoh: Makan & Minum"
+          placeholder="Contoh: Langganan Software"
           defaultValue={initialValues?.name}
           required
           maxLength={50}
+          autoFocus
+          className={FIELD}
         />
-      </div>
+      </label>
 
-      {/* Jenis */}
-      <div className="space-y-1.5">
-        <Label>Jenis Transaksi</Label>
-        <input type="hidden" name="type" value={type} />
-        <Select value={type} onValueChange={(v) => { if (v) setType(v) }}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="expense">💸 Pengeluaran</SelectItem>
-            <SelectItem value="income">💰 Pemasukan</SelectItem>
-            <SelectItem value="both">🔄 Keduanya</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Icon */}
-      <div className="space-y-1.5">
-        <Label htmlFor="icon">
-          Icon <span className="text-muted-foreground text-xs">(emoji, opsional)</span>
-        </Label>
-        <Input
-          id="icon"
-          name="icon"
-          placeholder="Ketik atau pilih emoji..."
-          value={icon}
-          onChange={(e) => setIcon(e.target.value)}
-          maxLength={10}
-        />
-        {/* Quick-pick emoji grid */}
-        <div className="flex flex-wrap gap-1.5 pt-1">
-          {SUGGESTED_ICONS.map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => setIcon(emoji)}
-              className={`h-8 w-8 text-base rounded-md border transition-colors hover:bg-muted ${icon === emoji ? 'bg-primary/10 border-primary/40' : 'border-transparent'}`}
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-2 pt-1">
+      <div className="flex justify-end gap-2">
         {onCancel && (
-          <Button type="button" variant="outline" className="flex-1" onClick={onCancel} disabled={isPending}>
+          <button type="button" onClick={onCancel} disabled={isPending} className={BTN_SECONDARY}>
             Batal
-          </Button>
+          </button>
         )}
-        <Button type="submit" className="flex-1" disabled={isPending}>
-          {isPending
-            ? isEdit ? 'Menyimpan...' : 'Menambahkan...'
-            : isEdit ? 'Simpan Perubahan' : 'Tambah Kategori'}
-        </Button>
+        <button type="submit" disabled={isPending} className={BTN_PRIMARY}>
+          {isPending ? 'Menyimpan…' : 'Simpan'}
+        </button>
       </div>
     </form>
   )
