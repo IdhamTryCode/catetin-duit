@@ -4,78 +4,51 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import {
-  LayoutDashboard,
-  ArrowLeftRight,
-  MessageCircle,
-  CreditCard,
-  Settings,
-  Tag,
-} from 'lucide-react'
 
 const navItems = [
-  { href: '/dashboard',              label: 'Beranda',    icon: LayoutDashboard },
-  { href: '/dashboard/transactions', label: 'Transaksi',  icon: ArrowLeftRight  },
-  { href: '/dashboard/categories',   label: 'Kategori',   icon: Tag             },
-  { href: '/dashboard/telegram',     label: 'Telegram',   icon: MessageCircle   },
-  { href: '/dashboard/subscription', label: 'Langganan',  icon: CreditCard      },
-  { href: '/dashboard/settings',     label: 'Pengaturan', icon: Settings        },
+  { href: '/dashboard',              label: 'Beranda'    },
+  { href: '/dashboard/transactions', label: 'Transaksi'  },
+  { href: '/dashboard/categories',   label: 'Kategori'   },
+  { href: '/dashboard/telegram',     label: 'Telegram'   },
+  { href: '/dashboard/subscription', label: 'Langganan'  },
+  { href: '/dashboard/settings',     label: 'Pengaturan' },
 ]
+
+/** Aktif juga untuk sub-halaman (mis. /dashboard/transactions/new). */
+export function isNavActive(pathname: string, href: string) {
+  return href === '/dashboard' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
+}
 
 export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="hidden md:flex w-64 flex-col h-full bg-sidebar flex-shrink-0">
-      {/* Logo */}
-      <div className="h-16 px-5 flex items-center border-b border-sidebar-border">
-        <Link href="/dashboard" className="flex items-center gap-2.5">
-          <Image
-            src="/logo.png"
-            alt="Catetin Duit"
-            width={32}
-            height={32}
-            className="rounded-lg flex-shrink-0"
-          />
-          <span className="font-bold text-base text-sidebar-foreground tracking-tight">
-            Catetin Duit
-          </span>
-        </Link>
-      </div>
+    <aside className="hidden h-full w-60 flex-shrink-0 flex-col bg-cd-dark px-3 py-[18px] text-white md:flex">
+      <Link href="/dashboard" className="flex items-center gap-2.5 px-2 pb-[22px] pt-1 text-white">
+        <Image src="/logo.png" alt="" width={32} height={32} className="h-8 w-8 rounded-[9px]" />
+        <span className="text-base font-bold">Catetin Duit</span>
+      </Link>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href
+      <nav className="flex flex-col gap-0.5 overflow-y-auto text-sm font-medium">
+        {navItems.map(({ href, label }) => {
+          const active = isNavActive(pathname, href)
           return (
             <Link
               key={href}
               href={href}
+              aria-current={active ? 'page' : undefined}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
-                isActive
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
-                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                'rounded-[10px] px-3 py-2.5 transition-colors',
+                active ? 'bg-cd-accent font-bold text-cd-dark' : 'text-cd-on-dark hover:bg-cd-dark-2 hover:text-white',
               )}
             >
-              <Icon
-                className={cn(
-                  'h-[17px] w-[17px] flex-shrink-0',
-                  isActive ? 'stroke-[2.5]' : 'stroke-[1.75]'
-                )}
-              />
               {label}
             </Link>
           )
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="px-4 py-4 border-t border-sidebar-border">
-        <p className="text-[11px] text-sidebar-foreground/30 font-medium">
-          © 2026 Catetin Duit
-        </p>
-      </div>
+      <span className="mt-auto p-2 text-xs text-[#5D7466]">© {new Date().getFullYear()} Catetin Duit</span>
     </aside>
   )
 }

@@ -1,6 +1,4 @@
 import { createClient } from '@/utils/supabase/server'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { signOut } from '@/app/(auth)/actions'
-import { Crown, LogOut, Settings, Sparkles, ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { statusBadge } from '@/lib/constants'
@@ -33,75 +31,65 @@ export async function Header() {
   const firstName = profile?.full_name?.split(' ')[0] ?? 'Kamu'
 
   return (
-    <header className="glass-header h-16 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-10 relative">
+    <header className="relative z-10 flex flex-shrink-0 items-center justify-between border-b border-cd-line bg-white/92 px-4 py-3.5 backdrop-blur-md md:px-8">
       {/* Mobile: Logo */}
       <div className="flex items-center gap-2 md:hidden">
         <Image src="/logo.png" alt="Catetin Duit" width={28} height={28} className="rounded-lg" />
-        <span className="font-bold text-sm text-foreground tracking-tight">Catetin Duit</span>
+        <span className="text-sm font-bold tracking-tight">Catetin Duit</span>
       </div>
 
       {/* Desktop: greeting */}
-      <div className="hidden md:block">
-        <p className="text-sm text-muted-foreground">
-          Halo,{' '}
-          <span className="font-semibold text-foreground">{firstName}</span> 👋
-        </p>
-      </div>
+      <p className="m-0 hidden text-sm text-cd-muted-2 md:block">
+        Halo, <strong className="text-cd-ink">{firstName}</strong>
+      </p>
 
-      {/* Right side */}
       <div className="flex items-center gap-2.5">
-        {/* Plan badge */}
-        <Badge
-          variant={planCfg.variant}
-          className="hidden sm:inline-flex gap-1 text-xs font-semibold"
+        <span
+          className={
+            planCfg.variant === 'destructive'
+              ? 'hidden rounded-full bg-[#FDF0F0] px-2.5 py-[5px] text-xs font-bold text-[#8A1F1F] sm:inline-flex'
+              : 'hidden rounded-full bg-cd-tint px-2.5 py-[5px] text-xs font-bold text-cd-primary-hover sm:inline-flex'
+          }
         >
-          {planCfg.icon && <Sparkles className="h-3 w-3" />}
-          {planCfg.label}
-        </Badge>
+          {planCfg.label.replace('✦ ', '')}
+        </span>
 
-        {/* Avatar dropdown */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
-            <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-primary/25 ring-offset-1 ring-offset-background">
-              <AvatarFallback className="text-xs bg-primary text-primary-foreground font-bold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+          <DropdownMenuTrigger
+            aria-label="Menu akun"
+            className="grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-cd-primary text-[13px] font-bold text-white outline-none transition-shadow hover:shadow-[0_0_0_3px_#CFE3D6] focus-visible:shadow-[0_0_0_3px_#CFE3D6]"
+          >
+            {initials}
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <div className="px-3 py-2.5">
-              <p className="text-sm font-semibold leading-none">{profile?.full_name || 'User'}</p>
-              <p className="text-xs text-muted-foreground mt-1 truncate">{profile?.email}</p>
+          <DropdownMenuContent
+            align="end"
+            className="w-60 rounded-[14px] border border-cd-line bg-white p-1.5 text-cd-ink shadow-[0_20px_40px_-16px_rgba(6,20,13,.25)]"
+          >
+            <div className="mb-1 flex flex-col gap-0.5 border-b border-cd-line-soft px-3 pb-3 pt-2.5">
+              <span className="text-sm font-bold">{profile?.full_name || 'User'}</span>
+              <span className="truncate text-[13px] text-cd-muted-2">{profile?.email}</span>
             </div>
-            <DropdownMenuSeparator />
             <DropdownMenuGroup>
               {profile?.role === 'admin' && (
-                <DropdownMenuItem>
-                  <Link href="/admin" className="flex items-center gap-2 w-full text-primary">
+                <DropdownMenuItem className="rounded-[9px] p-0">
+                  <Link href="/admin" className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-cd-primary">
                     <ShieldCheck className="h-4 w-4" />
                     Admin Panel
                   </Link>
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem>
-                <Link href="/dashboard/subscription" className="flex items-center gap-2 w-full">
-                  <Crown className="h-4 w-4" />
-                  Langganan
-                </Link>
+              <DropdownMenuItem className="rounded-[9px] p-0">
+                <Link href="/dashboard/subscription" className="w-full px-3 py-2.5 text-sm">Langganan</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/dashboard/settings" className="flex items-center gap-2 w-full">
-                  <Settings className="h-4 w-4" />
-                  Pengaturan
-                </Link>
+              <DropdownMenuItem className="rounded-[9px] p-0">
+                <Link href="/dashboard/settings" className="w-full px-3 py-2.5 text-sm">Pengaturan</Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="my-1 bg-cd-line-soft" />
             <DropdownMenuGroup>
               <form action={signOut}>
-                <DropdownMenuItem className="text-destructive cursor-pointer">
-                  <button type="submit" className="flex items-center gap-2 w-full">
-                    <LogOut className="h-4 w-4" />
+                <DropdownMenuItem className="rounded-[9px] p-0 focus:bg-[#FDF0F0]">
+                  <button type="submit" className="w-full cursor-pointer px-3 py-2.5 text-left text-sm text-cd-expense">
                     Keluar
                   </button>
                 </DropdownMenuItem>
