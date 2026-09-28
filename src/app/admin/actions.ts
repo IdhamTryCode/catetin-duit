@@ -21,7 +21,7 @@ async function requireAdminUser() {
   if (profile?.role !== 'admin') throw new Error('Forbidden')
 }
 
-const ADMIN_STATUSES = ['trial', 'premium', 'trial_expired'] as const
+const ADMIN_STATUSES = ['trial', 'premium', 'trial_expired', 'grace_period', 'cancelled'] as const
 
 /**
  * Ubah status langganan user. Memilih 'premium' = aktivasi manual setelah

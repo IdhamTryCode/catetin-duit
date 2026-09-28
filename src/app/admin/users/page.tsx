@@ -57,6 +57,8 @@ function StatusSelect({ user, onChanged }: { user: UserRow; onChanged: () => voi
         <SelectItem value="trial">Trial</SelectItem>
         <SelectItem value="premium">Premium (+{SUBSCRIPTION_DURATION_DAYS} hari)</SelectItem>
         <SelectItem value="trial_expired">Trial berakhir</SelectItem>
+        <SelectItem value="grace_period">Masa tenggang</SelectItem>
+        <SelectItem value="cancelled">Langganan berakhir</SelectItem>
       </SelectContent>
     </Select>
   )

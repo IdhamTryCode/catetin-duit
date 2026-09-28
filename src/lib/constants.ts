@@ -59,7 +59,7 @@ export function statusBadge(status: string | null | undefined): {
     case 'premium':      return { label: '✦ Premium',      variant: 'default',     icon: true  }
     case 'grace_period': return { label: 'Masa tenggang',  variant: 'outline',     icon: false }
     case 'trial':        return { label: 'Trial',          variant: 'secondary',   icon: false }
-    case 'cancelled':    return { label: 'Nonaktif',       variant: 'destructive', icon: false }
+    case 'cancelled':    return { label: 'Langganan berakhir', variant: 'destructive', icon: false }
     default:             return { label: 'Trial berakhir', variant: 'destructive', icon: false }
   }
 }
@@ -70,13 +70,19 @@ export const STATUS_NAMES: Record<string, string> = {
   premium:       'Premium',
   trial_expired: 'Trial berakhir',
   grace_period:  'Masa tenggang',
-  cancelled:     'Nonaktif',
+  cancelled:     'Langganan berakhir',
 }
 
 // ─── Subscription lifecycle ───────────────────────────────────────────────────
 
 /** Duration of a paid subscription in days */
 export const SUBSCRIPTION_DURATION_DAYS = 30
+
+/**
+ * Masa tenggang setelah Premium berakhir (hari). Selama ini status 'grace_period'
+ * (akses tetap penuh); setelahnya cron mengubah ke 'cancelled' (bot memblokir).
+ */
+export const GRACE_PERIOD_DAYS = 3
 
 /** Duration of the free trial period in days */
 export const TRIAL_DURATION_DAYS = 7

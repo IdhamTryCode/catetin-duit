@@ -5,7 +5,7 @@ import {
   sendTrialExpiredEmail,
   sendPremiumExpiringEmail,
 } from '@/lib/email'
-import { TRIAL_REMINDER_DAYS, PREMIUM_REMINDER_DAYS, FREE_PROMO } from '@/lib/constants'
+import { TRIAL_REMINDER_DAYS, PREMIUM_REMINDER_DAYS, FREE_PROMO, GRACE_PERIOD_DAYS } from '@/lib/constants'
 
 /**
  * Validate that the request originates from Vercel Cron or an authorized manual trigger.
@@ -41,6 +41,10 @@ function daysBetween(dateStr: string): number {
  * 1. Trial reminders — emails users H-3 and H-1 before trial ends.
  * 2. Trial expiry    — marks expired trials as 'trial_expired' and sends email.
  * 3. Premium reminders — emails premium users H-3 and H-1 before subscription ends.
+ * 4. Premium expiry  — premium yang lewat subscription_ends_at → 'grace_period'
+ *                      (akses tetap penuh GRACE_PERIOD_DAYS hari), lalu → 'cancelled'
+ *                      (bot memblokir, web akses terbatas). Perpanjangan dari admin
+ *                      mengembalikan status ke 'premium'.
  *
  * Returns a summary of actions taken and any errors encountered.
  */
@@ -54,6 +58,8 @@ export async function GET(req: NextRequest) {
     trial_reminder: 0,
     trial_expired: 0,
     premium_expiring: 0,
+    premium_grace: 0,
+    premium_cancelled: 0,
     errors: [] as string[],
   }
 
@@ -147,6 +153,32 @@ export async function GET(req: NextRequest) {
       }
     }
   }
+
+  // ─── 4. Premium expiry: premium → grace_period → cancelled ─────────────────
+  // Tahap grace → cancelled diproses dulu supaya satu user tidak melompati dua
+  // tahap dalam satu kali jalan. Batas tenggang dihitung dari subscription_ends_at.
+  const now = new Date()
+  const graceCutoff = new Date(now.getTime() - GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000).toISOString()
+
+  const { data: graceEnded, error: graceErr } = await supabase
+    .from('profiles')
+    .update({ subscription_status: 'cancelled', updated_at: now.toISOString() })
+    .eq('subscription_status', 'grace_period')
+    .lt('subscription_ends_at', graceCutoff)
+    .select('id')
+
+  if (graceErr) results.errors.push(`grace_to_cancelled: ${graceErr.message}`)
+  else results.premium_cancelled = graceEnded?.length ?? 0
+
+  const { data: premiumEnded, error: endedErr } = await supabase
+    .from('profiles')
+    .update({ subscription_status: 'grace_period', updated_at: now.toISOString() })
+    .eq('subscription_status', 'premium')
+    .lt('subscription_ends_at', now.toISOString())
+    .select('id')
+
+  if (endedErr) results.errors.push(`premium_to_grace: ${endedErr.message}`)
+  else results.premium_grace = premiumEnded?.length ?? 0
 
   const hasErrors = results.errors.length > 0
   console.log('[cron/daily]', results)
