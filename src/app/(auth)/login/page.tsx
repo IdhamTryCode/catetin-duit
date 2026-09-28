@@ -30,8 +30,13 @@ export default function LoginPage() {
 
   // Link konfirmasi yang gagal/kedaluwarsa diarahkan ke /login?error=email_confirm_failed
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('error') === 'email_confirm_failed') {
+    const err = new URLSearchParams(window.location.search).get('error')
+    if (err === 'email_confirm_failed') {
       setError('Link konfirmasi tidak valid atau sudah kedaluwarsa. Masuk dengan email-mu untuk meminta link baru.')
+    } else if (err === 'auth_callback_failed') {
+      // Terjadi saat link konfirmasi dibuka di perangkat/browser lain: email sudah
+      // terkonfirmasi oleh Supabase, hanya sesi yang tidak bisa dibuat di sini.
+      setError('Kalau kamu baru mengklik link konfirmasi, email-mu sudah terkonfirmasi. Silakan masuk di sini.')
     }
   }, [])
 
