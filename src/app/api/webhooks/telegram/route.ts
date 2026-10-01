@@ -12,6 +12,7 @@ import {
   subscriptionBlocked,
 } from '@/lib/telegram/handlers'
 import { promoActive } from '@/lib/settings'
+import { safeEqual } from '@/lib/security'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -39,7 +40,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: NextRequest) {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET
-  if (!secret || request.headers.get('x-telegram-bot-api-secret-token') !== secret) {
+  if (!secret || !safeEqual(request.headers.get('x-telegram-bot-api-secret-token') ?? '', secret)) {
     return NextResponse.json({ ok: false }, { status: 401 })
   }
 

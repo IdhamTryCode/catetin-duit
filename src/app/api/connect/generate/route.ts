@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthFromRequest } from '@/utils/supabase/server'
 import { CONNECT_CODE_MAX_PER_HOUR, CONNECT_CODE_TTL_MINUTES } from '@/lib/constants'
+import { randomInt } from 'node:crypto'
 
 function generateCode(length = 6): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+  // randomInt = CSPRNG. Math.random bisa diprediksi, tidak boleh untuk kode penghubung akun.
+  return Array.from({ length }, () => chars[randomInt(chars.length)]).join('')
 }
 
 export async function POST(request: NextRequest) {

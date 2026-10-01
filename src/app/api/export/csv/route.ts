@@ -3,10 +3,12 @@ import { getAuthFromRequest } from '@/utils/supabase/server'
 import { format } from 'date-fns'
 import { resolvePlan } from '@/lib/constants'
 import { promoActive } from '@/lib/settings'
+import { csvSafeText } from '@/lib/security'
 
 /** Escape a CSV cell value — wraps in quotes and escapes inner quotes */
 function csvCell(value: string | number | null | undefined): string {
-  const str = value == null ? '' : String(value)
+  // Angka (mis. -25000) dibiarkan; teks dari user dinetralkan dari formula injection.
+  const str = value == null ? '' : typeof value === 'number' ? String(value) : csvSafeText(String(value))
   return `"${str.replace(/"/g, '""')}"`
 }
 

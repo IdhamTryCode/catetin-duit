@@ -4,6 +4,7 @@ import { addDays } from 'date-fns'
 import { createAdminClient } from '@/utils/supabase/server'
 import { sendPaymentSuccessEmail, sendPaymentFailedEmail } from '@/lib/email'
 import { SUBSCRIPTION_DURATION_DAYS } from '@/lib/constants'
+import { safeEqual } from '@/lib/security'
 
 interface DuitkuCallbackPayload {
   merchantCode: string
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
     .update(`${mc}${amount}${merchantOrderId}${apiKey}`)
     .digest('hex')
 
-  if (signature !== expectedSignature) {
+  if (!safeEqual(signature, expectedSignature)) {
     return NextResponse.json({ message: 'Invalid signature' }, { status: 401 })
   }
 

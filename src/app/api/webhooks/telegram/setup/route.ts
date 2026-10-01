@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { safeEqual } from '@/lib/security'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -23,7 +24,7 @@ function auth(request: NextRequest): boolean {
   const provided =
     request.nextUrl.searchParams.get('secret') ||
     request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
-  return provided === secret
+  return !!provided && safeEqual(provided, secret)
 }
 
 function token(): string | null {

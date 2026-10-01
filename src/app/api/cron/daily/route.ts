@@ -7,20 +7,17 @@ import {
 } from '@/lib/email'
 import { TRIAL_REMINDER_DAYS, PREMIUM_REMINDER_DAYS } from '@/lib/constants'
 import { getSettings, isPromoActive, saveSetting } from '@/lib/settings'
+import { safeEqual } from '@/lib/security'
 
 /**
- * Validate that the request originates from Vercel Cron or an authorized manual trigger.
+ * Hanya menerima `Authorization: Bearer <CRON_SECRET>`.
  *
- * Two accepted authorization paths:
- * 1. Vercel Cron: sends `x-vercel-cron: 1` header automatically.
- * 2. Manual trigger (GitHub Actions, cron-job.org, etc.): sends `Authorization: Bearer <CRON_SECRET>`.
+ * Vercel Cron otomatis mengirim header ini bila env CRON_SECRET diset. Header
+ * `x-vercel-cron` TIDAK dipakai sebagai bukti: siapa pun bisa mengirimnya dari
+ * luar, lalu memicu email pengingat berulang-ulang dan perubahan status.
  */
 function isAuthorized(req: NextRequest): boolean {
-  const isVercelCron = req.headers.get('x-vercel-cron') === '1'
-  const secret = process.env.CRON_SECRET
-  const authHeader = req.headers.get('authorization')
-  const hasValidSecret = secret && authHeader === `Bearer ${secret}`
-  return isVercelCron || !!hasValidSecret
+  return safeEqual(req.headers.get('authorization') ?? '', `Bearer ${process.env.CRON_SECRET ?? ''}`) && !!process.env.CRON_SECRET
 }
 
 /**

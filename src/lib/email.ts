@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 import { TRIAL_DURATION_DAYS, SUBSCRIPTION_PRICE } from '@/lib/constants'
 import { formatIDR } from '@/lib/utils'
+import { escapeHtml } from '@/lib/security'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -43,7 +44,7 @@ function baseLayout(content: string): string {
           <td style="padding:20px 32px;border-top:1px solid #f4f4f5;background:#fafafa">
             <p style="margin:0;font-size:12px;color:#71717a;text-align:center">
               © ${new Date().getFullYear()} Catetin Duit · Dibuat untuk UMKM Indonesia
-              <br/>Kamu menerima email ini karena terdaftar di <a href="${APP_URL}" style="color:#3b82f6">catetinduit.com</a>
+              <br/>Kamu menerima email ini karena terdaftar di <a href="${APP_URL}" style="color:#3b82f6">catetinduit.de</a>
             </p>
           </td>
         </tr>
@@ -80,7 +81,7 @@ function infoBox(lines: string[]) {
  * @param name - User's full name (first name extracted internally)
  */
 export async function sendWelcomeEmail(to: string, name: string) {
-  const firstName = name.split(' ')[0]
+  const firstName = escapeHtml(name.split(' ')[0])
   const html = baseLayout(`
     ${h1(`Selamat datang, ${firstName}! 🎉`)}
     ${p('Akun Catetin Duit kamu sudah siap. Mulai catat keuangan lebih mudah dengan menghubungkan Telegram kamu.')}
@@ -110,7 +111,7 @@ export async function sendWelcomeEmail(to: string, name: string) {
  * @param trialEndsAt - ISO date string of trial end date
  */
 export async function sendTrialReminderEmail(to: string, name: string, daysLeft: number, trialEndsAt: string, price: number = SUBSCRIPTION_PRICE) {
-  const firstName = name.split(' ')[0]
+  const firstName = escapeHtml(name.split(' ')[0])
   const formattedDate = new Date(trialEndsAt).toLocaleDateString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
@@ -144,7 +145,7 @@ export async function sendTrialReminderEmail(to: string, name: string, daysLeft:
  * @param name - User's full name
  */
 export async function sendTrialExpiredEmail(to: string, name: string, price: number = SUBSCRIPTION_PRICE) {
-  const firstName = name.split(' ')[0]
+  const firstName = escapeHtml(name.split(' ')[0])
   const priceFormatted = formatIDR(price)
   const html = baseLayout(`
     ${h1('Trial kamu sudah berakhir 😔')}
@@ -181,7 +182,7 @@ export async function sendPaymentSuccessEmail(
   reference: string,
   subscriptionEndsAt: string,
 ) {
-  const firstName = name.split(' ')[0]
+  const firstName = escapeHtml(name.split(' ')[0])
   const formattedAmount = formatIDR(amount)
   const formattedDate = new Date(subscriptionEndsAt).toLocaleDateString('id-ID', {
     day: 'numeric', month: 'long', year: 'numeric',
@@ -214,7 +215,7 @@ export async function sendPaymentSuccessEmail(
  * @param name - User's full name
  */
 export async function sendPaymentFailedEmail(to: string, name: string) {
-  const firstName = name.split(' ')[0]
+  const firstName = escapeHtml(name.split(' ')[0])
   const html = baseLayout(`
     ${h1('Pembayaran tidak berhasil ❌')}
     ${p(`Halo ${firstName}, sayangnya pembayaran kamu tidak berhasil diproses.`)}
@@ -239,7 +240,7 @@ export async function sendPaymentFailedEmail(to: string, name: string) {
  * @param subscriptionEndsAt - ISO date string when subscription ends
  */
 export async function sendPremiumExpiringEmail(to: string, name: string, daysLeft: number, subscriptionEndsAt: string, price: number = SUBSCRIPTION_PRICE) {
-  const firstName = name.split(' ')[0]
+  const firstName = escapeHtml(name.split(' ')[0])
   const formattedDate = new Date(subscriptionEndsAt).toLocaleDateString('id-ID', {
     day: 'numeric', month: 'long', year: 'numeric',
   })
@@ -268,7 +269,7 @@ export async function sendPremiumExpiringEmail(to: string, name: string, daysLef
  * Email pengumuman dari admin (broadcast). Teks polos; baris baru dipertahankan.
  */
 export async function sendBroadcastEmail(to: string, name: string, subject: string, message: string) {
-  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const esc = escapeHtml
   const firstName = (name || 'Kamu').split(' ')[0]
   const body = esc(message).replace(/\n/g, '<br/>')
   const html = baseLayout(`

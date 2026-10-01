@@ -96,3 +96,18 @@ yang bisa membaca/menulis.
 Sebelum migrasi ini dijalankan aplikasi tetap berjalan normal dengan nilai
 default (env `NEXT_PUBLIC_FREE_PROMO`, harga & masa tenggang dari kode); hanya
 penyimpanan pengaturan yang belum bisa.
+
+---
+
+## 20261001_protect_profiles.sql — KEAMANAN, wajib
+
+Menutup celah eskalasi hak akses: sebelumnya user bisa mengubah `role`,
+`subscription_status`, dan tanggal trial/Premium di baris profilnya sendiri
+lewat API Supabase langsung (RLS membatasi baris, bukan kolom). Trigger
+`protect_profile_columns` mengunci kolom itu untuk request ber-JWT user dan
+melarang user menghapus profilnya; server (service role) tidak terpengaruh.
+Juga mencabut hak tulis langsung user pada `payments` dan `audit_logs`.
+
+Verifikasi setelah dijalankan (sebagai user biasa, dari konsol browser atau
+skrip): `update profiles set role = 'admin'` pada baris sendiri tidak
+mengubah apa pun.
