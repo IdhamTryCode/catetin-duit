@@ -25,7 +25,7 @@ transaksinya tercatat otomatis lalu tampil di dashboard web.
 
 | Bagian | Teknologi |
 |---|---|
-| Web & API | Next.js 14 (App Router), React 18, TypeScript |
+| Web & API | Next.js 15 (App Router), React 19, TypeScript |
 | UI | Tailwind CSS v4, komponen shadcn/Base UI, lucide-react, recharts |
 | Data & auth | Supabase (Postgres + RLS, Auth email/Google/GitHub) |
 | Bot | Telegram Bot API (webhook) + LLM OpenAI-compatible (Kenari) |

@@ -11,7 +11,7 @@ import { promoActive } from '@/lib/settings'
 export default async function TransactionsPage({
   searchParams,
 }: {
-  searchParams: { type?: string; page?: string }
+  searchParams: Promise<{ type?: string; page?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -24,9 +24,10 @@ export default async function TransactionsPage({
 
   const timezone   = profile?.timezone ?? 'Asia/Jakarta'
   const canExport  = resolvePlan(profile?.subscription_status, await promoActive()) === 'premium'
-  const page       = parsePageParam(searchParams?.page)
+  const sp         = await searchParams
+  const page       = parsePageParam(sp?.page)
   const pageSize   = PAGE_SIZE
-  const typeFilter = searchParams?.type
+  const typeFilter = sp?.type
 
   let query = supabase
     .from('transactions')

@@ -1,4 +1,4 @@
-import { withSentryConfig } from '@sentry/nextjs';
+import { withSentryConfig } from '@sentry/nextjs/config';
 // Content-Security-Policy: batasi asal skrip, koneksi, dan frame.
 // 'unsafe-inline' pada script/style masih diperlukan Next.js (skrip bootstrap
 // inline) — nonce-based CSP bisa menyusul. Hanya dipasang di produksi karena

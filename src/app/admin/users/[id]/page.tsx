@@ -23,7 +23,8 @@ const ACTION_LABEL: Record<string, string> = {
   'admin.reset_connect_codes': 'Reset kode connect',
 }
 
-export default async function AdminUserDetailPage({ params }: { params: { id: string } }) {
+export default async function AdminUserDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user: me } } = await supabase.auth.getUser()
   const db = createAdminClient()
@@ -31,7 +32,7 @@ export default async function AdminUserDetailPage({ params }: { params: { id: st
   const { data: user } = await db
     .from('profiles')
     .select('id, email, full_name, role, timezone, subscription_status, trial_ends_at, subscription_started_at, subscription_ends_at, telegram_chat_id, created_at')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
   if (!user) notFound()
 

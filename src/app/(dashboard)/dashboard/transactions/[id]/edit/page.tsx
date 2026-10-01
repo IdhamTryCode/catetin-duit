@@ -6,7 +6,7 @@ import { TransactionForm } from '../../transaction-form'
 import { type Category } from '@/types'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function EditTransactionPage({ params }: Props) {
@@ -18,7 +18,7 @@ export default async function EditTransactionPage({ params }: Props) {
   const { data: transaction } = await supabase
     .from('transactions')
     .select('id, amount, type, description, category_id, transaction_date')
-    .eq('id', params.id)
+    .eq('id', (await params).id)
     .eq('user_id', user.id)
     .is('deleted_at', null)
     .single()

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthFromRequest } from '@/utils/supabase/server'
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const { supabase, user } = await getAuthFromRequest(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -18,7 +19,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       ...(transaction_date !== undefined && { transaction_date }),
       updated_at: new Date().toISOString(),
     })
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user.id)
     .is('deleted_at', null)
     .select()
@@ -28,7 +29,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   return NextResponse.json(data)
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const { supabase, user } = await getAuthFromRequest(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -38,7 +40,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       deleted_at: new Date().toISOString(),
       deleted_by: user.id,
     })
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

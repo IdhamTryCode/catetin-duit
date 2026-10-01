@@ -13,6 +13,7 @@ import {
 } from '@/lib/telegram/handlers'
 import { promoActive } from '@/lib/settings'
 import { safeEqual } from '@/lib/security'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -117,6 +118,12 @@ async function handleUpdate(chatId: number, text: string, update: TelegramUpdate
 
   if (await blocked(profile)) {
     return sendMessage(chatId, MSG.blocked)
+  }
+
+  // Setiap pesan bebas = 1 panggilan LLM berbayar. Batasi per chat supaya satu
+  // user tidak bisa menguras kuota: 15 pesan/menit jauh di atas pemakaian wajar.
+  if (!rateLimit(`tg:${chatId}`, 15, 60_000)) {
+    return sendMessage(chatId, '⏳ Terlalu banyak pesan dalam waktu singkat. Coba lagi sebentar ya.')
   }
 
   await sendTyping(chatId)

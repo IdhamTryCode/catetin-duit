@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { use, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { ShieldCheck } from 'lucide-react'
@@ -27,9 +27,10 @@ const STATUS_FILTERS = [
   ['expired', 'Sudah berakhir'],
 ] as const
 
-export default function AdminUsersPage({ searchParams }: { searchParams: { status?: string } }) {
+export default function AdminUsersPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
+  const sp = use(searchParams)
   // Status trial_expired/cancelled dari link Overview masuk ke grup "Sudah berakhir".
-  const initialStatus = ['trial_expired', 'cancelled'].includes(searchParams?.status ?? '') ? 'expired' : searchParams?.status ?? ''
+  const initialStatus = ['trial_expired', 'cancelled'].includes(sp?.status ?? '') ? 'expired' : sp?.status ?? ''
   const [users, setUsers] = useState<UserRow[]>([])
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState(initialStatus)
