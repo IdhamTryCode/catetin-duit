@@ -31,8 +31,11 @@ export function generateMetadata(): Metadata {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${plusJakartaSans.variable} ${jetBrainsMono.variable}`}>
-      <body className="font-sans antialiased">
+    // suppressHydrationWarning: ekstensi browser (translate, dark mode, dll.) sering
+    // menyisipkan atribut ke <html>/<body> sebelum React hydrate. Hanya berlaku
+    // untuk atribut kedua elemen ini, bukan isi halaman.
+    <html lang="id" className={`${plusJakartaSans.variable} ${jetBrainsMono.variable}`} suppressHydrationWarning>
+      <body className="font-sans antialiased" suppressHydrationWarning>
         {children}
         <Toaster richColors position="top-right" />
       </body>
