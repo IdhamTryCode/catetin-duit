@@ -13,7 +13,7 @@ import {
 } from '@/lib/telegram/handlers'
 import { promoActive } from '@/lib/settings'
 import { safeEqual } from '@/lib/security'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -121,8 +121,13 @@ async function handleUpdate(chatId: number, text: string, update: TelegramUpdate
   }
 
   // Setiap pesan bebas = 1 panggilan LLM berbayar. Batasi per chat supaya satu
-  // user tidak bisa menguras kuota: 15 pesan/menit jauh di atas pemakaian wajar.
-  if (!rateLimit(`tg:${chatId}`, 15, 60_000)) {
+  // user tidak bisa menguras kuota; angka ini jauh di atas pemakaian wajar.
+  // Dua jendela: semburan (15/menit) dan total harian (300/hari) per chat.
+  const [burstOk, dailyOk] = await Promise.all([
+    rateLimitDb(`tg:min:${chatId}`, 15, 60),
+    rateLimitDb(`tg:day:${chatId}`, 300, 86_400),
+  ])
+  if (!burstOk || !dailyOk) {
     return sendMessage(chatId, '⏳ Terlalu banyak pesan dalam waktu singkat. Coba lagi sebentar ya.')
   }
 

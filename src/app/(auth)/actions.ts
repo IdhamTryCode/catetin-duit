@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { sendWelcomeEmail } from '@/lib/email'
+import { clientIp, rateLimitDb } from '@/lib/rate-limit'
 
 async function getAppUrl() {
   const headersList = await headers()
@@ -13,13 +14,37 @@ async function getAppUrl() {
   return `${protocol}://${host}`
 }
 
+const TOO_MANY = 'Terlalu banyak percobaan. Coba lagi dalam beberapa menit.'
+
+/**
+ * Semua permintaan auth lewat server ini, jadi Supabase melihat IP Vercel,
+ * bukan IP pengguna — batas bawaannya tidak efektif. Kita batasi sendiri:
+ * per IP (banjir dari satu sumber) dan per email (tebak password satu akun
+ * dari banyak IP). Mengembalikan false jika salah satu batas terlampaui.
+ */
+async function withinLimits(checks: [key: string, max: number, windowSeconds: number][]): Promise<boolean> {
+  const results = await Promise.all(checks.map(([key, max, win]) => rateLimitDb(key, max, win)))
+  return results.every(Boolean)
+}
+
+const normEmail = (v: FormDataEntryValue | string | null) => String(v ?? '').trim().toLowerCase().slice(0, 254)
+
 export async function login(formData: FormData) {
   const supabase = await createClient()
+  const ip = clientIp(await headers())
 
   const data = {
     email: formData.get('email') as string,
     password: formData.get('password') as string,
   }
+
+  const email = normEmail(data.email)
+  const ok = await withinLimits([
+    [`login:ip:${ip}`, 20, 300],                // 20 percobaan / 5 menit per IP
+    [`login:pair:${ip}:${email}`, 8, 900],      // 8 / 15 menit per IP+email
+    [`login:email:${email}`, 30, 900],          // 30 / 15 menit per email (serangan terdistribusi)
+  ])
+  if (!ok) return { error: TOO_MANY }
 
   const { error } = await supabase.auth.signInWithPassword(data)
 
@@ -49,6 +74,9 @@ function loginErrorMessage(message: string) {
 export async function signup(formData: FormData) {
   const supabase = await createClient()
   const appUrl = await getAppUrl()
+
+  // 5 pendaftaran / jam per IP: cegah pembuatan akun massal & spam email konfirmasi
+  if (!(await withinLimits([[`signup:ip:${clientIp(await headers())}`, 5, 3600]]))) return { error: TOO_MANY }
 
   const email = (formData.get('email') as string).trim().toLowerCase()
   const fullName = ((formData.get('full_name') as string) ?? '').trim()
@@ -92,6 +120,12 @@ const EMAIL_TAKEN = 'Email ini sudah terdaftar. Silakan masuk, atau pakai "Lupa 
 export async function resendConfirmation(email: string) {
   const supabase = await createClient()
   const appUrl = await getAppUrl()
+
+  const ok = await withinLimits([
+    [`resend:email:${normEmail(email)}`, 3, 600],
+    [`resend:ip:${clientIp(await headers())}`, 10, 3600],
+  ])
+  if (!ok) return { error: TOO_MANY }
   const { error } = await supabase.auth.resend({
     type: 'signup',
     email: email.trim().toLowerCase(),
@@ -157,6 +191,13 @@ export async function forgotPassword(formData: FormData) {
 
   const supabase = await createClient()
   const appUrl = await getAppUrl()
+
+  // Cegah bom email reset ke satu alamat / dari satu IP
+  const ok = await withinLimits([
+    [`forgot:email:${normEmail(email)}`, 3, 3600],
+    [`forgot:ip:${clientIp(await headers())}`, 5, 3600],
+  ])
+  if (!ok) return { error: TOO_MANY }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${appUrl}/auth/reset-password`,

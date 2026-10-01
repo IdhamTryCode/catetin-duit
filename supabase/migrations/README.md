@@ -111,3 +111,12 @@ Juga mencabut hak tulis langsung user pada `payments` dan `audit_logs`.
 Verifikasi setelah dijalankan (sebagai user biasa, dari konsol browser atau
 skrip): `update profiles set role = 'admin'` pada baris sendiri tidak
 mengubah apa pun.
+
+---
+
+## 20261001_rate_limits.sql
+
+Tabel `rate_limits` + fungsi `check_rate_limit` untuk membatasi percobaan
+login, pendaftaran, lupa password, kirim ulang konfirmasi, dan pesan bot.
+Disimpan di database supaya konsisten antar instance serverless. Tanpa migrasi
+ini aplikasi tetap jalan dengan pembatas di memori (kurang ketat).

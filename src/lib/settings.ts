@@ -25,7 +25,20 @@ const DEFAULTS: AppSettings = {
   tableReady: false,
 }
 
+// Cache per instance: landing & setiap halaman membaca pengaturan, jadi tanpa ini
+// banjir kunjungan = banjir query ke database. Perubahan dari admin terlihat
+// paling lambat SETTINGS_TTL_MS kemudian di instance lain.
+const SETTINGS_TTL_MS = 30_000
+let memo: { at: number; value: AppSettings } | null = null
+
 async function load(): Promise<AppSettings> {
+  if (memo && Date.now() - memo.at < SETTINGS_TTL_MS) return memo.value
+  const value = await loadFresh()
+  memo = { at: Date.now(), value }
+  return value
+}
+
+async function loadFresh(): Promise<AppSettings> {
   try {
     const { data, error } = await createAdminClient().from('app_settings' as never).select('key, value')
     if (error) return DEFAULTS
@@ -66,6 +79,7 @@ export async function promoActive(): Promise<boolean> {
 
 /** Simpan satu kunci pengaturan (service role). */
 export async function saveSetting(key: string, value: unknown, updatedBy?: string) {
+  memo = null
   const { error } = await createAdminClient()
     .from('app_settings' as never)
     .upsert({ key, value, updated_at: new Date().toISOString(), updated_by: updatedBy ?? null } as never)

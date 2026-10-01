@@ -183,6 +183,12 @@ export async function GET(req: NextRequest) {
   if (endedErr) results.errors.push(`premium_to_grace: ${endedErr.message}`)
   else results.premium_grace = premiumEnded?.length ?? 0
 
+  // ─── 5. Bersihkan catatan rate limit yang sudah lama (tabel opsional) ──────
+  await supabase
+    .from('rate_limits' as never)
+    .delete()
+    .lt('window_start', new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString())
+
   const hasErrors = results.errors.length > 0
   console.log('[cron/daily]', results)
   // Ditampilkan di Admin → Sistem. Gagal simpan (tabel belum ada) tidak fatal.
