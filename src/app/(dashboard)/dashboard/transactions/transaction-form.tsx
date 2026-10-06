@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { type Category } from '@/types'
-import { FIELD, LABEL, TypeToggle } from '@/components/dashboard/modal'
+import { FIELD, LABEL } from '@/components/dashboard/modal'
 import { BTN_PRIMARY } from '@/components/dashboard/ui'
 import { createTransaction, updateTransaction } from './actions'
 
@@ -52,10 +52,15 @@ export function TransactionForm({ categories, initialValues }: Props) {
   })
 
   const selectedType = form.watch('type')
+  const selectedCategory = form.watch('category_id') ?? ''
   const filteredCategories = categories.filter(
     (c) => c.type === selectedType || c.type === 'both'
   )
   const errors = form.formState.errors
+  const lastCategory = useRef<Record<'income' | 'expense', string>>({
+    income: initialValues?.type === 'income' ? initialValues.category_id ?? '' : '',
+    expense: initialValues?.type !== 'income' ? initialValues?.category_id ?? '' : '',
+  })
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true)
@@ -79,65 +84,75 @@ export function TransactionForm({ categories, initialValues }: Props) {
     // On success, actions.ts calls redirect() so no need to handle it here
   }
 
+  // Kategori terakhir yang dipilih untuk tiap jenis. Pindah jenis lalu kembali
+  // memulihkan pilihannya, bukan mengosongkan.
+  function changeType(next: 'income' | 'expense') {
+    const prev = form.getValues('type')
+    if (next === prev) return
+    lastCategory.current[prev] = form.getValues('category_id') ?? ''
+    form.setValue('type', next, { shouldDirty: true })
+    form.setValue('category_id', lastCategory.current[next], { shouldDirty: true })
+  }
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-[18px]">
-      <TypeToggle
-        value={selectedType}
-        onChange={(v) => {
-          form.setValue('type', v, { shouldDirty: true })
-          // Kategori lama mungkin tidak berlaku untuk jenis baru
-          const current = categories.find((c) => c.id === form.getValues('category_id'))
-          if (current && current.type !== v && current.type !== 'both') form.setValue('category_id', '')
-        }}
-      />
+      <label className={LABEL}>
+        Jenis
+        <select value={selectedType} onChange={(e) => changeType(e.target.value as 'income' | 'expense')} className={`${FIELD} font-normal`}>
+          <option value="expense">Pengeluaran</option>
+          <option value="income">Pemasukan</option>
+        </select>
+      </label>
 
       <label className={LABEL}>
-        Nominal (Rp)
+        Jumlah (Rp)
         <input
           type="number"
           inputMode="numeric"
           min={1}
           placeholder="25000"
-          className={`${FIELD} text-xl font-bold`}
+          className={`${FIELD} font-normal`}
           {...form.register('amount', { valueAsNumber: true })}
         />
         {errors.amount && <span className="text-[13px] font-medium text-cd-expense">{errors.amount.message}</span>}
       </label>
 
       <label className={LABEL}>
-        Keterangan
+        <span>Deskripsi <span className="font-normal text-cd-muted-2">(opsional)</span></span>
         <input placeholder="Contoh: makan siang, gaji Januari" className={`${FIELD} font-normal`} {...form.register('description')} />
       </label>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className={LABEL}>
-          Kategori
-          {/* <select> native: menampilkan NAMA kategori, bukan ID-nya */}
-          <select className={`${FIELD} font-normal`} {...form.register('category_id')}>
-            <option value="">Tanpa kategori</option>
-            {filteredCategories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className={LABEL}>
-          Tanggal
-          <input type="date" className={`${FIELD} font-normal`} {...form.register('transaction_date')} />
-          {errors.transaction_date && (
-            <span className="text-[13px] font-medium text-cd-expense">{errors.transaction_date.message}</span>
-          )}
-        </label>
-      </div>
+      <label className={LABEL}>
+        <span>Kategori <span className="font-normal text-cd-muted-2">(opsional)</span></span>
+        {/* <select> native: menampilkan NAMA kategori, bukan ID-nya */}
+        {/* Controlled: nilai dipulihkan saat ganti jenis, setelah opsinya ikut berganti */}
+        <select
+          className={`${FIELD} font-normal`}
+          value={selectedCategory}
+          onChange={(e) => form.setValue('category_id', e.target.value, { shouldDirty: true })}
+        >
+          <option value="">Tanpa kategori</option>
+          {filteredCategories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+      </label>
 
-      <div>
-        <button type="submit" disabled={isLoading} className={BTN_PRIMARY}>
-          {isLoading
-            ? (isEdit ? 'Menyimpan…' : 'Menambahkan…')
-            : (isEdit ? 'Simpan Perubahan' : 'Tambah Transaksi')}
-        </button>
-      </div>
+      <label className={LABEL}>
+        Tanggal
+        <input type="date" className={`${FIELD} font-normal`} {...form.register('transaction_date')} />
+        {errors.transaction_date && (
+          <span className="text-[13px] font-medium text-cd-expense">{errors.transaction_date.message}</span>
+        )}
+      </label>
+
+      <button type="submit" disabled={isLoading} className={`${BTN_PRIMARY} justify-center`}>
+        {isLoading
+          ? (isEdit ? 'Menyimpan…' : 'Menambahkan…')
+          : (isEdit ? 'Simpan Perubahan' : 'Tambah Transaksi')}
+      </button>
     </form>
   )
 }

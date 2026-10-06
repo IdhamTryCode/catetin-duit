@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { type Category } from '@/types'
 import { CdModal, FIELD, LABEL, TypeToggle } from '@/components/dashboard/modal'
@@ -16,6 +16,7 @@ export function AddTransaction({ categories, label = '+ Tambah Manual' }: { cate
   const [categoryId, setCategoryId] = useState('')
   const [date, setDate] = useState('')
   const [saving, setSaving] = useState(false)
+  const lastCategory = useRef<Record<'expense' | 'income', string>>({ expense: '', income: '' })
 
   const options = categories.filter((c) => c.type === type || c.type === 'both')
 
@@ -24,6 +25,7 @@ export function AddTransaction({ categories, label = '+ Tambah Manual' }: { cate
     setAmount('')
     setDescription('')
     setCategoryId('')
+    lastCategory.current = { expense: '', income: '' }
     setDate(new Date().toISOString().slice(0, 10))
     setOpen(true)
   }
@@ -62,8 +64,11 @@ export function AddTransaction({ categories, label = '+ Tambah Manual' }: { cate
           <TypeToggle
             value={type}
             onChange={(v) => {
+              if (v === type) return
+              // Ingat pilihan kategori per jenis supaya tidak hilang saat bolak-balik
+              lastCategory.current[type] = categoryId
               setType(v)
-              setCategoryId('')
+              setCategoryId(lastCategory.current[v])
             }}
           />
           <label className={LABEL}>
