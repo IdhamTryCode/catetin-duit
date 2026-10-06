@@ -5,24 +5,9 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { type Category } from '@/types'
+import { FIELD, LABEL, TypeToggle } from '@/components/dashboard/modal'
+import { BTN_PRIMARY } from '@/components/dashboard/ui'
 import { createTransaction, updateTransaction } from './actions'
 
 const formSchema = z.object({
@@ -70,6 +55,7 @@ export function TransactionForm({ categories, initialValues }: Props) {
   const filteredCategories = categories.filter(
     (c) => c.type === selectedType || c.type === 'both'
   )
+  const errors = form.formState.errors
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true)
@@ -94,115 +80,64 @@ export function TransactionForm({ categories, initialValues }: Props) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-        {/* Type */}
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Jenis</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="expense">💸 Pengeluaran</SelectItem>
-                  <SelectItem value="income">💰 Pemasukan</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-[18px]">
+      <TypeToggle
+        value={selectedType}
+        onChange={(v) => {
+          form.setValue('type', v, { shouldDirty: true })
+          // Kategori lama mungkin tidak berlaku untuk jenis baru
+          const current = categories.find((c) => c.id === form.getValues('category_id'))
+          if (current && current.type !== v && current.type !== 'both') form.setValue('category_id', '')
+        }}
+      />
 
-        {/* Amount */}
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Jumlah (Rp)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="25000"
-                  min={1}
-                  {...field}
-                  onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+      <label className={LABEL}>
+        Nominal (Rp)
+        <input
+          type="number"
+          inputMode="numeric"
+          min={1}
+          placeholder="25000"
+          className={`${FIELD} text-xl font-bold`}
+          {...form.register('amount', { valueAsNumber: true })}
         />
+        {errors.amount && <span className="text-[13px] font-medium text-cd-expense">{errors.amount.message}</span>}
+      </label>
 
-        {/* Description */}
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Deskripsi <span className="text-muted-foreground">(opsional)</span></FormLabel>
-              <FormControl>
-                <Input placeholder="contoh: makan siang, gaji januari..." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+      <label className={LABEL}>
+        Keterangan
+        <input placeholder="Contoh: makan siang, gaji Januari" className={`${FIELD} font-normal`} {...form.register('description')} />
+      </label>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className={LABEL}>
+          Kategori
+          {/* <select> native: menampilkan NAMA kategori, bukan ID-nya */}
+          <select className={`${FIELD} font-normal`} {...form.register('category_id')}>
+            <option value="">Tanpa kategori</option>
+            {filteredCategories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={LABEL}>
+          Tanggal
+          <input type="date" className={`${FIELD} font-normal`} {...form.register('transaction_date')} />
+          {errors.transaction_date && (
+            <span className="text-[13px] font-medium text-cd-expense">{errors.transaction_date.message}</span>
           )}
-        />
+        </label>
+      </div>
 
-        {/* Category */}
-        <FormField
-          control={form.control}
-          name="category_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Kategori <span className="text-muted-foreground">(opsional)</span></FormLabel>
-              <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih kategori..." />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="">— Tanpa kategori —</SelectItem>
-                  {filteredCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.icon ? `${cat.icon} ` : ''}{cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Date */}
-        <FormField
-          control={form.control}
-          name="transaction_date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tanggal</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Button type="submit" className="w-full" disabled={isLoading}>
+      <div>
+        <button type="submit" disabled={isLoading} className={BTN_PRIMARY}>
           {isLoading
-            ? (isEdit ? 'Menyimpan...' : 'Menambahkan...')
+            ? (isEdit ? 'Menyimpan…' : 'Menambahkan…')
             : (isEdit ? 'Simpan Perubahan' : 'Tambah Transaksi')}
-        </Button>
-      </form>
-    </Form>
+        </button>
+      </div>
+    </form>
   )
 }

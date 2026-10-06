@@ -133,7 +133,16 @@ async function handleUpdate(chatId: number, text: string, update: TelegramUpdate
 
   await sendTyping(chatId)
 
-  const result = await parseMessage(text)
+  // Kategori user (bawaan + kustom) dikirim ke LLM supaya pilihannya dari daftar nyata.
+  const { data: userCats } = await db
+    .from('categories')
+    .select('name, type, user_id')
+    .or(`user_id.is.null,user_id.eq.${profile.id}`)
+    .order('name')
+  const result = await parseMessage(
+    text,
+    (userCats ?? []).map((c) => ({ name: c.name, type: c.type, custom: !!c.user_id })),
+  )
   if (!result.ok || !result.parsed) {
     console.error('[telegram] parse gagal:', result.error, `(${result.elapsedMs}ms)`)
     return sendMessage(chatId, MSG.cannotParse)

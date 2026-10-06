@@ -353,24 +353,35 @@ export async function handleParsed(
   const today = todayInTz()
   const saved: Array<{ text: string }> = []
 
+  // Kategori bawaan + milik user, diambil sekali untuk semua transaksi di pesan ini.
+  const { data: allCats } = await db
+    .from('categories')
+    .select('id, name, type, user_id')
+    .or(`user_id.is.null,user_id.eq.${profile.id}`)
+  const resolveCategory = (name: string, type: 'income' | 'expense') => {
+    const fits = (allCats ?? []).filter((c) => c.type === type || c.type === 'both')
+    const wanted = name.trim().toLowerCase()
+    // Nama dari LLM harus ada DAN sesuai jenis transaksi; kustom menang atas bawaan.
+    const exact = fits.filter((c) => c.name.toLowerCase() === wanted).sort((a, b) => Number(!!b.user_id) - Number(!!a.user_id))[0]
+    if (exact) return exact
+    // Tidak cocok → jangan simpan tanpa kategori; pakai "… Lain" sesuai jenis.
+    const fallback = type === 'income' ? 'pemasukan lain' : 'pengeluaran lain'
+    return fits.find((c) => c.name.toLowerCase() === fallback) ?? null
+  }
+
   for (let i = 0; i < parsed.transactions.length; i++) {
     const tx = parsed.transactions[i]
     const date =
       tx.transaction_date ??
       (tx.date_offset !== undefined ? addDaysToYmd(today, tx.date_offset) : today)
 
-    const { data: cats } = await db
-      .from('categories')
-      .select('id')
-      .ilike('name', tx.category)
-      .or(`user_id.is.null,user_id.eq.${profile.id}`)
-      .limit(1)
+    const category = resolveCategory(tx.category, tx.type)
 
     const { error } = await db.from('transactions').insert({
       user_id: profile.id,
       type: tx.type,
       amount: Math.round(tx.amount),
-      category_id: cats?.[0]?.id ?? null,
+      category_id: category?.id ?? null,
       description: tx.description,
       source: 'telegram',
       raw_message: rawMessage,
@@ -392,7 +403,7 @@ export async function handleParsed(
     saved.push({
       text:
         `${tx.type === 'income' ? '📈' : '📉'} *${tx.description}* — ${formatRupiah(tx.amount)}\n` +
-        `   _${tx.category}_${label ? ` · ${label}` : ''}`,
+        `   _${category?.name ?? tx.category}_${label ? ` · ${label}` : ''}`,
     })
   }
 

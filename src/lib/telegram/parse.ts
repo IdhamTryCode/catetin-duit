@@ -71,10 +71,56 @@ Aturan:
   Tidak disebut -> jangan sertakan field tanggal.
 - confidence: 0.85+ kalau jelas; 0.6-0.84 kalau agak ragu (boleh tambahkan
   "clarification"); di bawah 0.6 gunakan bentuk non_financial.
-- Kategori yang tersedia — pengeluaran: Makanan & Minuman, Transportasi,
-  Bahan Baku, Pengeluaran Lain. pemasukan: Gaji & Upah, Penjualan Online,
-  Pemasukan Lain. Pilih yang paling cocok; kalau tidak ada, pakai
-  "Pengeluaran Lain" atau "Pemasukan Lain".`
+- type ditentukan lebih dulu dari arah uangnya: uang MASUK (gaji, tunjangan,
+  THR, bonus, transfer masuk, hasil jualan, dikasih uang) = "income"; uang
+  KELUAR (beli, bayar, jajan, ongkos, langganan) = "expense".
+- category WAJIB salah satu nama dari daftar kategori di bawah, ditulis PERSIS
+  sama, dan dari kelompok yang sesuai type-nya. Jangan mengarang nama baru.
+- Pilih kategori paling spesifik yang cocok. "Pengeluaran Lain" / "Pemasukan
+  Lain" hanya dipakai kalau benar-benar tidak ada yang cocok.
+- Kategori buatan pengguna (ditandai "kustom") diprioritaskan bila cocok.`
+
+/** Kategori bawaan — dipakai bila daftar kategori pengguna tidak diberikan. */
+const DEFAULT_CATEGORIES: CategoryHint[] = [
+  { name: 'Makanan & Minuman', type: 'expense' },
+  { name: 'Transportasi', type: 'expense' },
+  { name: 'Bahan Baku', type: 'expense' },
+  { name: 'Pengeluaran Lain', type: 'expense' },
+  { name: 'Gaji & Upah', type: 'income' },
+  { name: 'Penjualan Online', type: 'income' },
+  { name: 'Pemasukan Lain', type: 'income' },
+]
+
+/** Contoh isi kategori bawaan, supaya model tidak asal memilih "Lain". */
+const CATEGORY_NOTES: Record<string, string> = {
+  'makanan & minuman': 'makan, minum, kopi, jajan, snack, restoran, gofood/grabfood',
+  transportasi: 'bensin, parkir, tol, ojol, taksi, tiket kereta/bus/pesawat, servis kendaraan',
+  'bahan baku': 'belanja bahan/stok untuk usaha atau jualan',
+  'gaji & upah': 'gaji, upah, honor, tunjangan, THR, bonus kerja, lembur',
+  'penjualan online': 'hasil jualan, omzet, pesanan marketplace',
+}
+
+export interface CategoryHint {
+  name: string
+  /** 'income' | 'expense' | 'both' */
+  type: string
+  custom?: boolean
+}
+
+/** Bagian prompt berisi kategori yang tersedia untuk pengguna ini. */
+export function categoryPrompt(categories: CategoryHint[] = DEFAULT_CATEGORIES): string {
+  const list = categories.length ? categories : DEFAULT_CATEGORIES
+  const line = (c: CategoryHint) => {
+    const note = CATEGORY_NOTES[c.name.toLowerCase()]
+    return `  - ${c.name}${c.custom ? ' (kustom)' : ''}${note ? `: ${note}` : ''}`
+  }
+  const of = (t: string) => list.filter((c) => c.type === t || c.type === 'both').map(line).join('\n')
+  return `Daftar kategori.
+Pengeluaran (type "expense"):
+${of('expense')}
+Pemasukan (type "income"):
+${of('income')}`
+}
 
 export interface ParseResult {
   ok: boolean
@@ -87,7 +133,7 @@ export interface ParseResult {
  * Panggil LLM sekali dan validasi hasilnya dengan zod.
  * Tidak ada agent loop, tidak ada tool, tidak ada shell.
  */
-export async function parseMessage(text: string): Promise<ParseResult> {
+export async function parseMessage(text: string, categories?: CategoryHint[]): Promise<ParseResult> {
   const started = Date.now()
 
   const baseUrl = process.env.LLM_BASE_URL
@@ -115,7 +161,10 @@ export async function parseMessage(text: string): Promise<ParseResult> {
         max_tokens: 800,
         response_format: { type: 'json_object' },
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          // Daftar kategori di akhir: bagian awal prompt tetap sama antar pengguna (cache).
+          { role: 'system', content: `${SYSTEM_PROMPT}
+
+${categoryPrompt(categories)}` },
           { role: 'user', content: text.slice(0, 2000) },
         ],
       }),
