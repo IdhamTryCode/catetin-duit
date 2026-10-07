@@ -122,6 +122,28 @@ Pemasukan (type "income"):
 ${of('income')}`
 }
 
+/**
+ * Konteks tanggal untuk LLM. Tanpa ini model tidak tahu "hari ini", sehingga
+ * tanggal tanpa tahun ("2 oktober") ditebak ke tahun yang salah dan nama hari
+ * ("senin kemarin") tidak bisa diubah jadi tanggal.
+ */
+export function datePrompt(now: Date = new Date(), tz: string = process.env.USER_DEFAULT_TIMEZONE || 'Asia/Jakarta'): string {
+  const ymd = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
+  const dayName = (d: Date) => new Intl.DateTimeFormat('id-ID', { timeZone: tz, weekday: 'long' }).format(d)
+  const days = Array.from({ length: 8 }, (_, i) => new Date(now.getTime() - i * 86_400_000))
+  const recent = days.slice(1).map((d) => `${dayName(d)} = ${ymd(d)}`).join(', ')
+  return [
+    `Hari ini: ${dayName(now)}, ${ymd(now)}.`,
+    `7 hari terakhir: ${recent}.`,
+    'Aturan tanggal tambahan:',
+    '- Tanggal tanpa tahun ("2 oktober", "tgl 28 september") -> pakai tahun dari "Hari ini".',
+    '  Kalau hasilnya jatuh di masa depan, pakai tahun sebelumnya (transaksi adalah kejadian yang sudah lewat).',
+    '- "tahun lalu" -> tahun "Hari ini" dikurangi 1.',
+    '- Nama hari ("senin kemarin", "hari jumat", "sabtu lalu") -> isi "transaction_date" dari daftar 7 hari terakhir.',
+    '- "tadi pagi", "barusan", "hari ini", atau tanpa keterangan waktu -> jangan sertakan field tanggal.',
+  ].join('\n')
+}
+
 export interface ParseResult {
   ok: boolean
   parsed?: Parsed
@@ -164,7 +186,9 @@ export async function parseMessage(text: string, categories?: CategoryHint[]): P
           // Daftar kategori di akhir: bagian awal prompt tetap sama antar pengguna (cache).
           { role: 'system', content: `${SYSTEM_PROMPT}
 
-${categoryPrompt(categories)}` },
+${categoryPrompt(categories)}
+
+${datePrompt()}` },
           { role: 'user', content: text.slice(0, 2000) },
         ],
       }),

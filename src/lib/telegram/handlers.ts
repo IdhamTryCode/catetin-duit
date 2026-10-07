@@ -63,6 +63,14 @@ function dateLabel(offset: number | undefined): string | null {
   return `${-offset} hari lalu`
 }
 
+/** "2026-10-02" -> "2 Okt 2026" (tanpa pergeseran zona waktu). */
+function formatYmdLabel(ymd: string): string {
+  const [y, m, d] = ymd.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('id-ID', {
+    day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
+  })
+}
+
 export function subscriptionBlocked(profile: Profile): boolean {
   return !FREE_PROMO && BLOCKED_STATUSES.includes(profile.subscription_status)
 }
@@ -399,7 +407,9 @@ export async function handleParsed(
       continue
     }
 
-    const label = dateLabel(tx.date_offset)
+    // Selalu sebut tanggalnya kalau bukan hari ini, supaya user bisa langsung
+    // melihat (dan mengoreksi) bila tanggal yang ditangkap keliru.
+    const label = date === today ? null : dateLabel(tx.date_offset) ?? formatYmdLabel(date)
     saved.push({
       text:
         `${tx.type === 'income' ? '📈' : '📉'} *${tx.description}* — ${formatRupiah(tx.amount)}\n` +
