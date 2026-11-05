@@ -1,0 +1,8 @@
+# Paksa akhir baris LF di semua OS (Windows & Linux) agar git tidak menganggap semua file berubah.
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
