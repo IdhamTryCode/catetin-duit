@@ -181,7 +181,8 @@ export async function adminRecordPayment(input: {
     const { error: payErr } = await createAdminClient().from('payments').insert({
       user_id: userId,
       amount: Math.round(amount),
-      gateway_reference: 'MANUAL',
+      // Kolom ini UNIQUE (constraint payments_tripay_reference_key), jadi tiap pembayaran manual butuh nilai unik.
+      gateway_reference: orderId,
       merchant_order_id: orderId,
       idempotency_key: orderId,
       status: 'paid',
